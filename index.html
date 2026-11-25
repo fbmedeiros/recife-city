@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0d0b14" />
+  <title>HELLCIFE · Recife em mundo aberto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <div id="place"><div id="bairro"></div><div id="street">—</div><div id="near"></div></div>
+    <canvas id="minimap" width="200" height="200"></canvas>
+    <div id="speed" class="hidden"><span id="kmh">0</span><small>km/h</small></div>
+    <div id="clock">16:30</div>
+    <div id="money">R$ 0</div>
+    <div id="objective" class="hidden"></div>
+    <div id="wanted"></div>
+    <div id="flash"></div>
+    <div id="big" class="hidden"><div class="t"></div><div class="s"></div></div>
+    <div id="hint"></div>
+    <div id="bubbles"></div>
+  </div>
+
+  <div id="phone" class="hidden">
+    <div class="phone-notch"></div>
+    <div class="phone-top"><span id="phone-clock">17:45</span><span>📶 🔋</span></div>
+    <button class="close-x" data-x="phone" aria-label="Fechar celular">✕</button>
+    <div id="phone-tabs"></div>
+    <div class="phone-title">Bicos</div>
+    <div class="phone-sub">Faz uns corres e junta uns trocados</div>
+    <div id="offers"></div>
+    <div class="phone-foot"><b>1–4</b> aceitar · <b>X</b> cancelar bico · <b>P</b> fechar</div>
+  </div>
+
+  <div id="map" class="hidden">
+    <canvas id="bigmap"></canvas>
+    <button class="close-x" data-x="map" aria-label="Fechar mapa">✕</button>
+    <div class="map-help"><span class="k-only">Clique para se teletransportar · <b>M</b> fecha</span><span class="t-only">Toque num lugar pra ir pra lá</span></div>
+  </div>
+
+  <div id="start">
+    <!-- intro enquanto carrega: fotos do próprio jogo com curiosidades do Recife -->
+    <div id="intro" aria-hidden="true"><div class="slide"></div><div class="slide"></div><div class="intro-cap"><div class="ic-t"></div><div class="ic-s"></div></div></div>
+    <div class="start-inner">
+      <div class="logo">HELLCIFE</div>
+      <div class="sub">Da Boa Vista a Boa Viagem · protótipo</div>
+      <div id="loading">Carregando o Recife…</div>
+      <div id="loadbar"><i></i></div>
+      <button id="play" class="hidden">JOGAR</button>
+      <div class="keys-touch">
+        <div><b>Lado esquerdo</b> arraste para andar / dirigir</div>
+        <div><b>Lado direito</b> arraste para girar a câmera</div>
+        <div><b>🚗</b> entrar, roubar ou sair do carro</div>
+        <div><b>🏃 ⤴️ 🕺 / ✋</b> correr, pular e passinho · freio de mão</div>
+        <div><b>📱 🗺️ 🧭 📻 ⏩</b> celular, mapa, GPS, rádio e relógio</div>
+        <div><b>★</b> roubar carro, atropelar ou bater na viatura chama a PM</div>
+        <div class="rotate">Melhor com o celular deitado 📲</div>
+      </div>
+      <div class="keys">
+        <div><b>WASD / setas</b> andar / dirigir</div><div><b>Mouse</b> câmera</div>
+        <div><b>Shift</b> correr</div><div><b>Espaço</b> pular (no carro: freio de mão)</div>
+        <div><b>F</b> carro · barco no Marco Zero</div><div><b>H</b> buzina · <b>B</b> compra do ambulante no sinal</div>
+        <div><b>M</b> mapa</div><div><b>P</b> celular / bicos</div>
+        <div><b>T</b> adiantar 2 h (Shift+T volta)</div><div><b>G</b> passinho em qualquer lugar</div>
+        <div><b>N</b> GPS (Shift+N cancela)</div><div><b>R</b> rádio 8-bit liga / troca</div>
+        <div><b>U</b> mudo (liga / desliga o som) · <b>K</b> foto</div><div></div>
+        <div style="grid-column: span 2"><b>★</b> roubar carro, atropelar ou bater na viatura chama a PM</div>
+      </div>
+      <div class="credits">Mapa © colaboradores do OpenStreetMap (ODbL) e Microsoft Building Footprints (ODbL) · Altura dos prédios: GHSL, Comissão Europeia (CC BY 4.0)</div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/intro.js"></script>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

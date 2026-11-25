@@ -1,0 +1,6 @@
+node_modules
+dist
+.DS_Store
+# dados brutos de mapa (227 MB): só servem pra gerar a cidade; o jogo usa public/data
+/data/
+.claude/settings.local.json
