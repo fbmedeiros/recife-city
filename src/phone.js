@@ -3,6 +3,7 @@ import { renderTrofeus, contagem } from './trofeus.js';
 
 const TABS = [
   { id: 'bicos', title: 'Bicos', sub: 'Faz uns corres e junta uns trocados' },
+  { id: 'lendas', title: 'Lendas', sub: 'Objetivo: acha as 10 lendas do Recife' },
   { id: 'agenda', title: 'Agenda', sub: 'O que tem pra fazer no Recife agora' },
   { id: 'garagem', title: 'Garagem', sub: 'Auto Oxe: carro novo entregue onde tu tiver' },
   { id: 'loja', title: 'Loja', sub: 'Feira de São José: roupa e acessório' },
@@ -66,6 +67,9 @@ export class Phone {
       this.subEl.textContent = `${contagem()} troféus · saldo R$ ${save.money.toLocaleString('pt-BR')}`;
       renderTrofeus(this.listEl);
       this.footEl.innerHTML = touchUI() ? '' : '<b>Q/E</b> abas · <b>P</b> fechar';
+    } else if (this.tab === 'lendas' && this.lendas) {
+      this.lendas.render(this.listEl);
+      this.footEl.innerHTML = touchUI() ? 'Toque numa lenda pra comprar a dica do bairro' : '<b>1–9, 0</b> dica do bairro · <b>Q/E</b> abas · <b>P</b> fechar';
     } else if (this.tab === 'agenda' && this.agenda) {
       this.agenda.render(this.listEl, this.player);
       this.footEl.innerHTML = touchUI() ? 'Toque num lugar pra traçar a rota' : '<b>1–9</b> / clique traça a rota · <b>Q/E</b> abas · <b>P</b> fechar';
@@ -92,6 +96,7 @@ export class Phone {
     if (this.tab === 'trofeus' || this.tab === 'zap') return false;
     if (this.tab === 'album') { if (n) this.album.act(Number(n[1]) - 1); return !!n; }
     if (this.tab === 'agenda') { if (n) this.agenda?.act(Number(n[1]) - 1); return !!n; }
+    if (this.tab === 'lendas') return !!this.lendas?.key(code);
     if (n) { this.shop.act(this.tab, Number(n[1]) - 1); this.render(); return true; }
     return false;
   }

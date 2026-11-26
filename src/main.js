@@ -22,6 +22,8 @@ import { Touch, isTouch } from './touch.js';
 import { buildTrees } from './trees.js';
 import { loadPhotos } from './photos.js';
 import { PASSOS, passinhoPose, applyPose } from './culture.js';
+import { protagonista } from './protagonista.js';
+import { atualizarGente } from './corpos.js';
 import { heightAt } from './terrain.js';
 import { addMoney } from './save.js';
 import { GPS } from './gps.js';
@@ -58,6 +60,9 @@ import { Desafios } from './desafios.js';
 import { Casamento } from './casamento.js';
 import { Lixo } from './lixo.js';
 import { Barbearia } from './barbearia.js';
+import { Corrida } from './corrida.js';
+import { Quadrilha } from './quadrilha.js';
+import { Lendas } from './lendas.js';
 import { Malabarista } from './malabarista.js';
 import { Mirantes } from './mirantes.js';
 import { Domino } from './domino.js';
@@ -184,6 +189,7 @@ const player = {
   move: null, moveT: 0, // passo do passinho
 };
 scene.add(player.mesh);
+const prota = protagonista(); prota.attach(player.mesh, outfitOpts()); // corpo com esqueleto e animação (protagonista.js)
 function applyOutfit() {
   const old = player.mesh;
   player.mesh = makePerson(outfitOpts());
@@ -192,6 +198,7 @@ function applyOutfit() {
   player.mesh.visible = old.visible;
   scene.remove(old);
   scene.add(player.mesh);
+  prota.attach(player.mesh, outfitOpts());
 }
 
 const nearestEdge = (graph, x, z) => traffic.nearestEdge(graph, x, z);
@@ -288,7 +295,7 @@ function bodyFree(x, z) {
 }
 
 function enterOrExit() {
-  if (passageiro.dentro || catamara.ativo) return; // de passageiro não pega o volante
+  if (passageiro.dentro || catamara.ativo || quadrilha.dancando) return; // de passageiro não pega o volante
   if (player.vehicle) {
     const v = player.vehicle;
     if (Math.abs(v.speed) > 3) return;
@@ -458,6 +465,16 @@ const casamento = new Casamento({ scene, world, hud, player, sinos, makeVehicle 
 const lixo = new Lixo({ scene, world, traffic, hud, player });
 // barbearias de bairro perto dos mercados (a pé, B corta o cabelo)
 const barbearia = new Barbearia({ scene, world, hud, player, applyOutfit });
+// Corrida da Orla: de manhã, largada no Parque Dona Lindu, 2 km pelo calçadão (a pé, B se inscreve)
+const corrida = new Corrida({ scene, world, hud, player, day, sharks });
+agenda.m.corrida = corrida;
+// ensaio de quadrilha junina no Sítio da Trindade, de tarde (a pé, B entra e acompanha as figuras)
+const quadrilha = new Quadrilha({ scene, world, hud, player, day, trees });
+agenda.m.quadrilha = quadrilha;
+// o objetivo do jogo: caçada às 10 Lendas do Recife (aba Lendas do celular, ranking local)
+const lendas = new Lendas({ scene, world, hud, player, praia, corrida, sharks });
+phone.lendas = lendas;
+lendas.onChange = () => phone.render();
 agenda.onRoute = () => { if (phone.open) togglePhone(); };
 // jangadas navegando no mar de Boa Viagem
 const jangadas = new Jangadas({ scene, world, sharks });
@@ -553,7 +570,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyR' && started && !e.shiftKey) radio();
   if (e.code === 'KeyU' && started) toggleMute();
   if (e.code === 'KeyK' && started) fotoPedida = true; // modo foto: salva a cena sem HUD
-  if (e.code === 'KeyB' && started) { if (player.vehicle) { if (!voltaPontes.comeca() && !ambulantes.comprar()) malabarista.moeda(); } else if (!barbearia.corta() && !catamara.b() && !passageiro.b() && !bicicletas.aluga() && !mirantes.b() && !pescaria.b() && !artistas.moeda() && !praia.comprar() && !feira.comprar()) caranguejos.comprar(); }
+  if (e.code === 'KeyB' && started) { if (player.vehicle) { if (!voltaPontes.comeca() && !ambulantes.comprar()) malabarista.moeda(); } else if (!quadrilha.b() && !corrida.b() && !barbearia.corta() && !catamara.b() && !passageiro.b() && !bicicletas.aluga() && !mirantes.b() && !pescaria.b() && !artistas.moeda() && !praia.comprar() && !feira.comprar()) caranguejos.comprar(); }
 });
 function togglePhone() {
   if (hud.mapOpen) toggleMap();
@@ -573,7 +590,7 @@ const touch = isTouch ? new Touch({
   keys,
   onTap: (a) => {
     if (!started) return;
-    if (a === 'act') { if (player.vehicle && voltaPontes.hint && voltaPontes.comeca()) return; if (player.vehicle && ambulantes.hint && ambulantes.comprar()) return; if (player.vehicle && malabarista.hint && malabarista.moeda()) return; if (!player.vehicle && barbearia.hint && barbearia.corta()) return; if (!player.vehicle && catamara.hint && catamara.b()) return; if (!player.vehicle && bicicletas.hint && bicicletas.aluga()) return; if (!player.vehicle && passageiro.hint && passageiro.b()) return; if (!player.vehicle && mirantes.hint && mirantes.b()) return; if (!player.vehicle && pescaria.hint && pescaria.b()) return; if (!player.vehicle && artistas.hint && artistas.moeda()) return; if (!player.vehicle && praia.hint && praia.comprar()) return; if (!player.vehicle && feira.hint && feira.comprar()) return; if (!player.vehicle && caranguejos.hint && caranguejos.comprar()) return; if (boardBoat()) return; if (!player.vehicle && !traffic.nearestCar(player.pos.x, player.pos.z, 4.5) && (player.dancing || nearRoda())) toggleDance(); else enterOrExit(); }
+    if (a === 'act') { if (player.vehicle && voltaPontes.hint && voltaPontes.comeca()) return; if (player.vehicle && ambulantes.hint && ambulantes.comprar()) return; if (player.vehicle && malabarista.hint && malabarista.moeda()) return; if (!player.vehicle && (quadrilha.perto || quadrilha.dancando) && quadrilha.b()) return; if (!player.vehicle && corrida.perto && corrida.b()) return; if (!player.vehicle && barbearia.hint && barbearia.corta()) return; if (!player.vehicle && catamara.hint && catamara.b()) return; if (!player.vehicle && bicicletas.hint && bicicletas.aluga()) return; if (!player.vehicle && passageiro.hint && passageiro.b()) return; if (!player.vehicle && mirantes.hint && mirantes.b()) return; if (!player.vehicle && pescaria.hint && pescaria.b()) return; if (!player.vehicle && artistas.hint && artistas.moeda()) return; if (!player.vehicle && praia.hint && praia.comprar()) return; if (!player.vehicle && feira.hint && feira.comprar()) return; if (!player.vehicle && caranguejos.hint && caranguejos.comprar()) return; if (boardBoat()) return; if (!player.vehicle && !traffic.nearestCar(player.pos.x, player.pos.z, 4.5) && (player.dancing || nearRoda())) toggleDance(); else enterOrExit(); }
     else if (a === 'jump') jump();
     else if (a === 'dance') toggleDance();
     else if (a === 'horn') audio.horn(1);
@@ -781,8 +798,8 @@ function updateOnFoot(dt) {
   const steal = car && traffic.cars.includes(car);
   const roda = !car && nearRoda();
   const boat = !car && world.rio?.boardable(player.pos.x, player.pos.z);
-  if (touch) { touch.setMode(false, barbearia.hint ? 'cortar' : catamara.hint ? (catamara.ativo ? 'voltar' : 'embarcar') : bicicletas.hint ? 'alugar' : passageiro.hint ? (passageiro.dentro ? 'descer' : passageiro.espera ? 'desistir' : 'esperar') : mirantes.hint ? (mirantes.ativo ? 'descer' : 'subir') : pescaria.hint ? (pescaria.estado ? 'puxar' : 'pescar') : artistas.hint ? 'moeda' : praia.hint || feira.hint || caranguejos.hint ? 'comprar' : boat ? 'barco' : car ? (steal ? 'roubar' : 'entrar') : roda ? (player.dancing ? 'parar' : 'dançar') : null); hud.hint(''); }
-  else hud.hint(boat ? `F — atravessar de barco pro ${boat.state === 'A' ? 'Parque das Esculturas' : 'Marco Zero'} (R$ 5)` : car ? (steal ? 'F — roubar o carro' : 'F — entrar no carro') : roda ? (player.dancing ? 'G — sair da roda' : 'G — entrar na roda de passinho') : player.dancing ? 'G — parar de dançar' : barbearia.hint || catamara.hint || bicicletas.hint || passageiro.hint || mirantes.hint || pescaria.hint || artistas.hint || praia.hint || feira.hint || caranguejos.hint);
+  if (touch) { touch.setMode(false, quadrilha.perto ? 'dançar' : corrida.perto ? 'correr' : barbearia.hint ? 'cortar' : catamara.hint ? (catamara.ativo ? 'voltar' : 'embarcar') : bicicletas.hint ? 'alugar' : passageiro.hint ? (passageiro.dentro ? 'descer' : passageiro.espera ? 'desistir' : 'esperar') : mirantes.hint ? (mirantes.ativo ? 'descer' : 'subir') : pescaria.hint ? (pescaria.estado ? 'puxar' : 'pescar') : artistas.hint ? 'moeda' : praia.hint || feira.hint || caranguejos.hint ? 'comprar' : boat ? 'barco' : car ? (steal ? 'roubar' : 'entrar') : roda ? (player.dancing ? 'parar' : 'dançar') : null); hud.hint(''); }
+  else hud.hint(boat ? `F — atravessar de barco pro ${boat.state === 'A' ? 'Parque das Esculturas' : 'Marco Zero'} (R$ 5)` : car ? (steal ? 'F — roubar o carro' : 'F — entrar no carro') : roda ? (player.dancing ? 'G — sair da roda' : 'G — entrar na roda de passinho') : player.dancing ? 'G — parar de dançar' : quadrilha.hint || corrida.hint || barbearia.hint || catamara.hint || bicicletas.hint || passageiro.hint || mirantes.hint || pescaria.hint || artistas.hint || praia.hint || feira.hint || caranguejos.hint);
 }
 
 function updateDriving(dt) {
@@ -896,7 +913,7 @@ function frame() {
   const dt = frame.manual ? (clock.elapsedTime += 1 / 30, 1 / 30) : Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
   if (started && !hud.mapOpen && police.frozen <= 0 && !sharks.busy && sharks.phase !== 'over') {
-    if (player.vehicle) updateDriving(dt); else if (player.boat) updateBoatRide(); else if (passageiro.dentro) { if (touch) { touch.setMode(false, 'descer'); hud.hint(''); } else hud.hint(passageiro.hint); } else if (catamara.ativo) { if (touch) { touch.setMode(false, 'voltar'); hud.hint(''); } else hud.hint(catamara.hint); } else updateOnFoot(dt);
+    if (player.vehicle) updateDriving(dt); else if (player.boat) updateBoatRide(); else if (passageiro.dentro) { if (touch) { touch.setMode(false, 'descer'); hud.hint(''); } else hud.hint(passageiro.hint); } else if (catamara.ativo) { if (touch) { touch.setMode(false, 'voltar'); hud.hint(''); } else hud.hint(catamara.hint); } else if (quadrilha.dancando) { if (touch) { touch.setMode(false, 'passo'); hud.hint(''); } else hud.hint(quadrilha.hint); } else updateOnFoot(dt);
   } else if (!started) {
     camYaw += dt * 0.05; // giro lento atrás da tela inicial
   }
@@ -925,9 +942,11 @@ function frame() {
     for (const p of traffic.peds) ground(p.mesh, p.down > 0 ? 0.15 : 0);
     if (player.vehicle) pitch(player.vehicle.mesh); else if (sharks.busy) { /* o tubarão puxa pro fundo */ } else if (!player.boat) ground(player.mesh, player.yOff + (player.hop || 0) - (sharks.swimming ? 1.05 : 0));
   }
+  prota.update(dt, { speed: player.speed || 0, air: player.yOff > 0.05, dancing: !!player.dancing, boat: !!player.boat, swim: !!sharks.swimming, driving: !!player.vehicle });
   updateCamera(dt);
   world.update(camera.position, t);
   trees.update(camera.position, t);
+  atualizarGente(camera); // NPCs de perto com corpo de esqueleto (corpos.js)
   // pedestres longe não aparecem (cada um tem ~20 peças)
   for (const ped of traffic.peds) ped.mesh.visible = ped.mesh.position.distanceToSquared(camera.position) < 150 * 150;
   hud.update(dt, player, camYaw);
@@ -967,6 +986,9 @@ function frame() {
   if (started) casamento.update(dt, t);
   if (started) lixo.update(dt, t);
   if (started) barbearia.update(dt, t, camera.position);
+  if (started) corrida.update(dt, t, camera.position);
+  if (started) quadrilha.update(dt, t, camera.position);
+  if (started) lendas.update(dt, t, camera.position);
   if (started) malabarista.update(dt, t);
   // hora do rush: de manhã cedo e no fim da tarde a cidade enche de carro
   { const h = day.hours, rush = (h >= 6.5 && h < 9) || h >= 16; traffic.maxCars = rush ? 70 : 55; traffic.rush = rush; }
@@ -978,7 +1000,7 @@ function frame() {
   updateHeadlight();
   // som das comunidades: cada batida no volume da fonte mais perto
   if (started && world.culture) {
-    const vol = { brega: 0, atabaque: 0, ciranda: 0, punk: 0, capoeira: capoeira.vol(camera.position), coco: artistas.vol(camera.position), forro: forro.vol(camera.position) };
+    const vol = { brega: 0, atabaque: 0, ciranda: 0, punk: 0, capoeira: capoeira.vol(camera.position), coco: artistas.vol(camera.position), forro: Math.max(forro.vol(camera.position), quadrilha.vol(camera.position)) };
     for (const s of world.culture.sounds) {
       if (s.night && day.hours < 14) continue; // sem noite: o atabaque do terreiro toca à tarde
       const d = Math.hypot(s.x - camera.position.x, s.z - camera.position.z);
@@ -1003,7 +1025,7 @@ function frame() {
 frame();
 
 // para depuração no console
-window.game = { barbearia, casamento, lixo, desafios, agenda, catamara, bicicletas, malabarista, praiaJogos, carroDeSom, passageiro, forro, mirantes, artistas, voltaPontes, pescaria, pipas, domino, capoeira, gps, album, weather, bloco, ambience, ambulantes, boletim, jogo, praia, roteiro, zap, ambulancia, blitz, pombos, sinos, feira, negocios, caranguejos, jangadas, avioes, audio, sharks, caramelos,
+window.game = { lendas, quadrilha, corrida, barbearia, casamento, lixo, desafios, agenda, catamara, bicicletas, malabarista, praiaJogos, carroDeSom, passageiro, forro, mirantes, artistas, voltaPontes, pescaria, pipas, domino, capoeira, gps, album, weather, bloco, ambience, ambulantes, boletim, jogo, praia, roteiro, zap, ambulancia, blitz, pombos, sinos, feira, negocios, caranguejos, jangadas, avioes, audio, sharks, caramelos,
   player, traffic, police, missions, world, day, composer, save, shop, phone, camera, scene, renderer, keys, teleport, enterOrExit, touch, trees,
   // depuração: avança n quadros na mão (o navegador pausa o loop quando a janela fica escondida)
   tick(n = 1) { frame.manual = true; for (let i = 0; i < n; i++) frame(); frame.manual = false; },

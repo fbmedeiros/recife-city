@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import { Kit, obb, ringOf } from './classics.js';
 import { stampDisc } from './collide.js';
+import { pisoElevado } from './rua.js';
 
 const BX = new THREE.BoxGeometry(1, 1, 1);
 // prédios do OSM sem nome, achados pelo centro do contorno
@@ -84,11 +85,13 @@ export function buildMarcoZero(group, data, env, mat) {
     const sh = new THREE.Shape(plaza.p.map(([x, z]) => new THREE.Vector2(x, -z)));
     const m = new THREE.Mesh(new THREE.ShapeGeometry(sh).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     m.position.y = 0.075; m.receiveShadow = true; group.add(m);
+    pisoElevado({ p: plaza.p }, 0.075); // quem anda sobe no piso (rua.js/curbHeight), senão o pé afunda
   }
   // ---------------- Rosa dos Ventos e medalhão
   if (rosa) {
     const disc = new THREE.Mesh(new THREE.CircleGeometry(18, 96).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: rosaTex(), roughness: 0.75, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 }));
     disc.position.set(rosa.x, 0.1, rosa.z); disc.receiveShadow = true; group.add(disc);
+    pisoElevado({ x: rosa.x, z: rosa.z, r: 18 }, 0.1);
     const mz = data.pois.find((p) => p.name === 'Marco Zero') || rosa;
     let mx = mz.x, mzz = mz.z; if (Math.hypot(mx - rosa.x, mzz - rosa.z) < 19) { mx = rosa.x - 22; mzz = rosa.z; }
     const med = new THREE.Mesh(new THREE.CircleGeometry(1.6, 48).rotateX(-Math.PI / 2), new THREE.MeshStandardMaterial({ map: medalTex(), metalness: 0.7, roughness: 0.35 }));

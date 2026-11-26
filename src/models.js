@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { registrarPessoa, marcarAndar } from './corpos.js';
 
 const box = new THREE.BoxGeometry(1, 1, 1);
 const mats = new Map();
@@ -644,13 +645,17 @@ export function makePerson(opts = {}) {
   // cabelo: idoso grisalho; mulher e homem com estilos diferentes
   const hairC = opts.hairColor || (tipo === 'idoso' ? pick(['#bdbab3', '#d9d6cf', '#8c8a85', '#efece6']) : pick(HAIR));
   const hairK = opts.hair || (fem ? roll({ long: 26, bun: 16, rabo: 18, trancas: 14, afro: 12, curly: 14 }) : roll({ short: 34, buzz: 24, curly: 14, afro: 8, careca: tipo === 'idoso' ? 30 : 8 }));
+  const capacete = [];
   if (opts.helmet) {
-    head.add(part(new THREE.SphereGeometry(0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), mat(pick(['#111111', '#c8102e', '#f2f2f0', '#1d3557']), { metalness: 0.3, roughness: 0.25 }), 1, 1.05, 1.08, 0, -0.01, -0.005));
-    head.add(part(box, mat('#1a2229', { metalness: 0.7, roughness: 0.1 }), 0.2, 0.08, 0.04, 0, 0.0, 0.135));
+    capacete.push(part(new THREE.SphereGeometry(0.15, 16, 10, 0, Math.PI * 2, 0, Math.PI * 0.62), mat(pick(['#111111', '#c8102e', '#f2f2f0', '#1d3557']), { metalness: 0.3, roughness: 0.25 }), 1, 1.05, 1.08, 0, -0.01, -0.005));
+    capacete.push(part(box, mat('#1a2229', { metalness: 0.7, roughness: 0.1 }), 0.2, 0.08, 0.04, 0, 0.0, 0.135));
   } else if (!opts.hat) {
     if (hairK !== 'careca') head.add(mesh(hairGeo(hairK), mat(hairC, { roughness: 0.75 })));
   } else head.add(mesh(hairGeo('buzz'), mat(hairC, { roughness: 0.75 })));
   if (!fem && !opts.helmet && !fixed && Math.random() < (tipo === 'idoso' ? 0.35 : 0.2)) head.add(mesh(beardGeo, mat(hairC, { roughness: 0.85 }), 0, false));
+  // o que vem depois disto na cabeça (capacete aqui; véu, moicano etc. nos módulos) é acessório: o corpo novo copia
+  head.userData.fixos = head.children.length;
+  if (capacete.length) head.add(...capacete);
   upper.add(head);
   if (opts.hat) upper.add(makeHat(opts.hat));
   if (opts.glasses) upper.add(part(box, mat('#0c0c0c', { metalness: 0.6, roughness: 0.2 }), 0.2, 0.04, 0.02, 0, 1.706, 0.112));
@@ -660,6 +665,21 @@ export function makePerson(opts = {}) {
   g.scale.set(build * hgt, hgt, Math.min(1.1, build) * hgt);
   g.userData = { model: true, legL, legR, kneeL, kneeR, armL, armR, elbowL, elbowR, upper, head, phase: Math.random() * 6, tipo, stoop: tipo === 'idoso' ? 0.12 : 0 };
   if (tipo === 'idoso') upper.rotation.x = 0.12;
+  // para o corpo com esqueleto (corpos.js): o visual desta pessoa e as peças de caixa, que somem quando ela ganha
+  // o corpo novo de perto. O que os módulos penduram depois (pandeiro, véu, sombrinha na mão) não entra na lista.
+  const hex = (m) => '#' + m.color.getHexString();
+  const sh = opts.stripes ? [opts.stripes].flat()[0] : time ? time.filter((c) => c !== 'v')[0] : hex(shirt);
+  g.userData.look = {
+    fem, tipo, pele: hex(skin), top, bottom, longSleeve, camisa: dress ? hex(dress) : sh, calca: hex(pants), saia: skirtM ? hex(skirtM) : null,
+    sapato: chinelo ? null : hex(shoeM), cabelo: opts.helmet || opts.hat ? (opts.hat ? 'buzz' : 'careca') : hairK, corCabelo: hairC, player: fixed,
+  };
+  const caixas = [], acess = [];
+  const marca = (o, l) => o.traverse((q) => { if (q.isMesh) l.push(q); });
+  for (const c of g.children) if (c !== upper) marca(c, caixas);
+  for (const c of upper.children) if (c !== head) (upper.children.indexOf(c) > upper.children.indexOf(head) ? acess : caixas).push(...(() => { const l = []; marca(c, l); return l; })());
+  head.children.forEach((c, i) => marca(c, i < head.userData.fixos ? caixas : acess));
+  g.userData.caixas = caixas; g.userData.acessorios = acess;
+  registrarPessoa(g);
   return g;
 }
 
@@ -724,4 +744,5 @@ export function animatePerson(p, speed, dt) {
   u.upper.rotation.y = s * 0.12 * amp;
   u.upper.rotation.x = run * 0.12 + (u.stoop || 0);
   if (u.head) u.head.rotation.y = -u.upper.rotation.y * 0.8; // a cabeça olha pra frente
+  marcarAndar(u, speed); // corpo com esqueleto de perto: anima o andar de verdade (corpos.js)
 }

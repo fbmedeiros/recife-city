@@ -11,6 +11,22 @@ let walkMat = null; // material da calçada (buildSidewalks), reaproveitado na c
 // faixas de calçada coladas em fachada que encosta na pista, por célula de 40 m (para groundY)
 const strips = new Map();
 const platforms = new Map(); // estações do corredor de ônibus (buildBusCorridor), para curbHeight
+// pisos elevados de praça (ex.: o piso cor-de-rosa e a Rosa dos Ventos do Marco Zero, 7,5 e 10 cm acima do chão):
+// quem anda sobe neles, senão o pé afunda no piso. pisoElevado({ p: [[x, z]…] } | { x, z, r }, altura)
+const pisos = [];
+export function pisoElevado(forma, h) {
+  const p = forma.p, b = p ? p.reduce((a, [x, z]) => [Math.min(a[0], x), Math.min(a[1], z), Math.max(a[2], x), Math.max(a[3], z)], [Infinity, Infinity, -Infinity, -Infinity]) : [forma.x - forma.r, forma.z - forma.r, forma.x + forma.r, forma.z + forma.r];
+  pisos.push({ ...forma, h, b });
+}
+function pisoAt(x, z) {
+  let h = 0;
+  for (const P of pisos) {
+    if (x < P.b[0] || x > P.b[2] || z < P.b[1] || z > P.b[3] || P.h <= h) continue;
+    if (P.p) { let c = false; const q = P.p; for (let i = 0, j = q.length - 1; i < q.length; j = i++) if ((q[i][1] > z) !== (q[j][1] > z) && x < ((q[j][0] - q[i][0]) * (z - q[i][1])) / (q[j][1] - q[i][1]) + q[i][0]) c = !c; if (c) h = P.h; }
+    else if ((x - P.x) ** 2 + (z - P.z) ** 2 <= P.r * P.r) h = P.h;
+  }
+  return h;
+}
 const CURB_W = 0.22;
 // largura da calçada (m) por tipo de via; via de serviço, acesso e ponte não ganham
 const SIDEWALK = { trunk: 3.6, primary: 3.4, secondary: 3.0, tertiary: 2.6, unclassified: 2.2, residential: 2.2, living_street: 1.8 };
@@ -257,6 +273,7 @@ export function roadIndex(roads) {
 // altura da calçada num ponto (0 na pista, fora dela ou no morro): para o boneco subir no meio-fio
 export function curbHeight(nearRoad, isDrive, roadW) {
   return (x, z) => {
+    const ph = pisos.length ? pisoAt(x, z) : 0; if (ph) return ph;
     // plataforma das estações do corredor: quem anda sobe nela (0,35 m)
     for (const pl of platforms.get(Math.floor(x / 40) * 100003 + Math.floor(z / 40)) || []) {
       const rx = x - pl.x, rz = z - pl.z, a = rx * pl.dx + rz * pl.dz, o = -rx * pl.dz + rz * pl.dx;

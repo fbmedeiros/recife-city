@@ -323,6 +323,9 @@ O script abre o jogo num Chrome sem janela (perfil novo, save vazio) e joga um p
 - monta um casamento na porta de uma igreja e confere que termina e conta;
 - solta o caminhão de lixo com os garis;
 - corta o cabelo numa barbearia e confere que o visual mudou;
+- se inscreve na Corrida da Orla e corre os 2 km pelo calçadão até a chegada;
+- entra no ensaio da quadrilha junina no Sítio da Trindade e acompanha as 8 figuras;
+- faz a caçada às 10 Lendas do Recife inteira (dica do bairro, cada lenda achada, ranking e aba do celular);
 - liga o toró com alagamento;
 - passa pelo álbum, pelas oito abas do celular, pelo bloco de frevo e pelo som ambiente;
 - para num sinal vermelho, espera o ambulante e compra;
@@ -787,6 +790,56 @@ Seis barbearias de nome inventado (Barbearia do Biu, Salão do Galego, Barbearia
 
 A pé e perto, **B** corta o cabelo (R$ 15). Cada corte é o próximo da lista: social, máquina 1, nevou (platinado), cacheado, black power, luzes, tranças nagô e careca. O barbeiro comenta ("Nevou! Platinado pra brilhar no paredão."). O corte fica salvo no visual do jogador (`save.outfit.hair` e `hairColor`). Troféus: "Na régua" (primeiro corte) e "Cliente fiel" (4 cortes).
 
+## Objetivo: Caçada às Lendas do Recife (`src/lendas.js`)
+
+O objetivo do jogo. Dez lendas soltas na cidade, contadas com humor do dia a dia do Recife:
+
+| Lenda | Tipo | Onde |
+|---|---|---|
+| Perna Cabeluda | assombração (folclore dos anos 70) | Rua da Aurora |
+| Papa-Figo aposentado | assombração | Mercado de São José |
+| Emparedada da Rua Nova | assombração | Rua Nova, Santo Antônio |
+| Comadre Fulozinha | assombração | Jardim Secreto do Poço da Panela |
+| Guia Autodeclarado do Marco Zero | figura inventada | Marco Zero |
+| Profeta do Corredor | figura inventada | Av. Conde da Boa Vista |
+| Coach Quântico da Orla | figura inventada | calçadão de Boa Viagem, perto do 3º Jardim |
+| Galego Amigo do Tubarão | figura inventada | areia do Pina |
+| Tia do Bom Dia | figura inventada | Mercado da Encruzilhada |
+| Influencer do Cais | figura inventada | Rua do Bom Jesus |
+
+As figuras são inventadas; nenhuma é pessoa real. Como o Recife tem várias ruas com o mesmo nome, cada lenda de rua vai pro trecho mais perto de um ponto dado (a Rua da Aurora da beira do Capibaribe, não a da Estância).
+
+- **Começar:** aba **Lendas** do celular (a segunda). **1** ou um clique no cartão de objetivo começa a caçada. Uns 25 s depois de abrir o jogo aparece o convite, se a caçada nunca começou.
+- **Tempo:** o cronômetro corre enquanto se joga e aparece no canto da tela (🕵️ Lendas 3/10 · 12:34).
+- **Dicas:** cada lenda não achada mostra uma charada. Por R$ 20 (tecla do número, 0 pra décima, ou clique), a aba mostra o bairro.
+- **Achar:** a pé, chegar a 5 m. A lenda solta a fala, aparece o cartão e a figurinha entra na aba com uma legenda irônica. De perto (25 m) elas soltam frases que ajudam a achar. Fora da caçada, mandam o jogador abrir o celular.
+- **Visual:** a Perna Cabeluda é uma perna gigante e cabeluda, com a barra da bermuda, pulando. A Emparedada é um fantasma translúcido colado na parede de um sobrado. A Fulozinha é baixinha, de cabelo comprido com flores, e aparece e some. Os outros têm placa ou objeto próprio: "SÓ FIGO", bandeirinha de guia, "O ÔNIBUS VEM!", "MINDSET 40 GRAUS", boia, celular no pau de selfie com ring light.
+- **Fim:** as dez fecham o tempo, que entra no ranking local (os 5 melhores, salvos no aparelho em `save.rankingLendas`). A primeira vez paga R$ 300. Dá pra caçar de novo.
+- **Troféus:** Vi uma lenda, Meio caminho assombrado, Caçador de Lendas e Mais rápido que a Perna Cabeluda (menos de 20 min).
+
+## Ensaio de quadrilha junina (`src/quadrilha.js`)
+
+No Sítio da Trindade, em Casa Amarela (onde acontece o São João do Recife), das 14h até o relógio virar, já que o jogo não tem noite. O ensaio procura um terreiro livre de uns 14 × 10 m dentro do sítio e tira as árvores de cima dele com `trees.tira`. Lá monta:
+- bandeirinhas de chita em zigue-zague entre quatro postes e uma fogueira que tremula na ponta;
+- na cabeceira, o marcador de chapéu de palha com o microfone e o sanfoneiro;
+- seis casais, cavalheiros de chapéu de palha e damas de vestido de chita.
+
+O marcador puxa uma figura a cada 7 s: cumprimento, balancê, caminho da roça, olha a chuva, é mentira, túnel, grande roda e anarriê. Os casais andam até as posições de cada figura e fazem os gestos: braços pra cima na chuva, arco no túnel, mesura no cumprimento.
+
+- A pé, perto, **B** entra no ensaio no lugar do sexto cavalheiro e o jogador dança com o grupo, sem o controle dos pés. A cada figura gritada, **B** dentro de 1,8 s acompanha o passo. Acertar 6 das 8 conta pro troféu Matuto arretado.
+- Assistir 40 s de perto dá o troféu Olha a fogueira. Entra na Agenda e no sorteio dos desafios do dia.
+- O som é o do forró do jogo (composição própria), pela distância.
+
+## Corrida da Orla (`src/corrida.js`)
+
+Das 6h às 10h, no calçadão de Boa Viagem, a largada fica no Parque Dona Lindu: pórtico inflável vermelho, locutor chamando ("Inscrição aberta!") e 14 corredores numerados esperando. A pé, **B** na largada faz a inscrição (R$ 10). Depois da contagem a corrida sai rumo ao norte: 2 km pelo meio do calçadão (a faixa é calculada pela Av. Boa Viagem, depois da pista e da ciclofaixa), com mesa de água e voluntária na metade e o pórtico azul de CHEGADA lá na frente. O topo da tela mostra posição, tempo e quanto falta.
+
+- Correr (Shift) é 8 m/s; o pelotão vai de 5,4 a ~8 m/s, então ganhar exige correr a prova toda.
+- Pódio paga R$ 150, 80 e 50; os outros ganham a medalha de participação. O melhor tempo fica salvo e aparece na Agenda.
+- Uma corrida por dia. Pegar carro, sair da orla (70 m do calçadão) ou passar de 15 min desclassifica.
+- Troféus: Peito nº 1, Pódio na orla, Campeão da orla. Entra no sorteio dos desafios do dia e na Agenda do celular.
+- A corrida e o nome são inventados.
+
 ## Sinos das igrejas (`src/sinos.js`, `audio.sino`)
 A cada hora cheia do jogo, a igreja mais perto do jogador (a menos de 450 m) bate o sino uma vez por hora, como relógio de 12 horas (15h dá 3 batidas), uma a cada 1,6 s. As igrejas vêm dos lugares de culto do mapa e dos nomes com igreja, basílica, capela, matriz, convento, concatedral ou paróquia. O sino é sintetizado com parciais de sino (fundamental, terça menor, quinta, oitava e um "hum" grave) que demoram a sumir, com o volume pela distância. Quando o relógio volta das 17h pras 6h, não toca.
 
@@ -1157,6 +1210,30 @@ Fotos do jogo (Chrome sem janela, câmera livre, 11h30) lado a lado com fotos do
 - `public/data/estacionamentos.json` (132 KB) tem os contornos de superfície do OpenStreetMap (amenity=parking, ODbL), baixados do Overpass em 23/11/2026. Ficam de fora garagem coberta, subsolo e cobertura; são 859 lotes, ~212 ha.
 - Cada lote vira asfalto com as vagas pintadas (`buildParking` em world.js): fileiras de 5 m dos dois lados de um corredor de 6 m, vaga de 2,5 m, alinhadas pelo lado mais comprido do lote.
 - A malha fica logo abaixo das ruas, então as pistas de serviço continuam por cima. São ~5 mil triângulos numa malha só, e `?semestacionamento` desliga.
+
+## Protagonista com corpo de verdade (26/11) — `src/protagonista.js`
+- O protagonista agora tem um corpo humano com esqueleto de 65 ossos (~21 mil triângulos com cabelo e roupa), pele com relevo e animação de verdade. Ele troca sozinho entre parado, andar (a passada acompanha a velocidade), correr, no pique, no ar, dançando, sentado no barco e nadando. No carro some, como antes.
+- O boneco de caixas continua existindo, invisível, porque o resto do jogo mexe nas peças dele (passinho, pulo, barco, colisão). O corpo novo é filho dele, então herda posição, giro e visibilidade. No `main.js` são três linhas: `attach` na criação e na troca de roupa, e `update` a cada quadro. `?bonecovelho` volta ao boneco de caixas.
+- A roupa segue o save: a regata pega a cor da camisa, a bermuda a da calça, o tênis a do sapato e o cabelo a cor escolhida. O corte da barbearia vira um dos cabelos do kit: social, máquina, coque nas tranças e careca. Cacheado e black power ficam com o social, porque o kit gratuito não tem esses. Boné, chapéu de cangaceiro, óculos e sombrinha da loja aparecem no corpo novo: são as mesmas peças do boneco de caixas, copiadas e presas nos ossos. Chapéu e óculos vão na cabeça, alinhados pelo topo e pela frente do rosto e na escala da largura da cabeça nova. A sombrinha vai no peito, do lado direito.
+- No passinho, o corpo novo dança uma dança só (`Dance_Loop`). Os passos com nome do passinho continuam só no boneco de caixas.
+- Arquivos: corpo, cabelos e animações da Quaternius, CC0 (Universal Base Characters e Universal Animation Library, versões gratuitas). Ficam em `public/personagens/` (4,4 MB). `animacoes-jogo.glb` traz só as 16 animações que o jogo usa (2,8 MB, contra 7,6 MB do pacote inteiro). As texturas foram reduzidas a 1024 px, e a licença está em `LICENCA-Quaternius-CC0.txt`.
+- A roupa (regata, bermuda e tênis) é recortada do próprio corpo, pelos triângulos cujo osso principal é o do tronco, do quadril/coxa ou do pé. A peça é inflada 1 cm e presa no mesmo esqueleto.
+- `prototipo.html` (com `npm run dev`) mostra o boneco de caixas ao lado do corpo novo, com botões para cada animação.
+
+## NPCs de perto com corpo de verdade (26/11) — `src/corpos.js`
+- Quem está a até ~35 m da câmera, no máximo 16 pessoas, ganha um corpo humano com esqueleto, de um conjunto de corpos reaproveitados. Há modelo masculino e feminino, sai em 42 m, e o jogador e as estátuas ficam de fora. Mais longe continua o boneco de caixas.
+- **Porte:** o corpo do kit é de "super-herói". Cada NPC sorteia magro, médio ou forte (mulher: mais magras; idoso: médio). Braço e coxa ficam mais finos na espessura, com mão e pé no tamanho certo, e o tronco um pouco mais estreito. A escala vai depois da animação a cada quadro, porque os clipes trazem escala em todos os ossos.
+- **Chapéu e peças penduradas depois:** se um módulo pendura ou tira algo do tronco depois que a pessoa ganhou o corpo novo (o chapéu de palha da quadrilha), as cópias nos ossos são refeitas, e o original some (antes ficava em dobro). O chapéu sobe a altura de um cabelo, porque a cabeça de caixa é medida com cabelo e a nova sem. A saia abre mais embaixo, então a coxa dança por dentro sem furar.
+- **Andar de verdade:** quando a pessoa só está andando (`animatePerson` marca isso a cada quadro), o corpo novo usa as animações do kit, com parado, andar e trote pela velocidade e troca suave. Se o módulo mexe nos braços depois do passo (celular, sacola, sombrinha), esses braços continuam copiados do boneco. Dança, capoeira, sentado e outras poses especiais seguem copiadas por inteiro.
+- Os módulos não mudam: cada pessoa continua sendo o boneco de `makePerson`, posado pelas juntas (`userData.legL`, `armR`, `upper`, `head`…) e por `animatePerson`. A cada quadro a pose das juntas é copiada para os ossos: coxa, canela, braço, antebraço, tronco e cabeça, com o lado tirado da posição e a pose de referência do primeiro quadro de "parado". Dança, capoeira, dominó, instrumentos e o resto continuam valendo.
+- Só as peças de caixa criadas por `makePerson` somem (`userData.caixas`). O que os módulos penduram depois (pandeiro, véu, moicano) continua visível, preso na junta de caixa. Boné, óculos e sombrinha da pessoa vão para os ossos, como no protagonista.
+- O visual vem de `userData.look`, gravado em `makePerson`:
+  - **Pele:** textura clara ou escura pelo tom do boneco, com um tom por cima.
+  - **Roupa:** uma malha só, com uma cor por região (tronco, braço, antebraço, quadril/coxa, canela, pé) num shader. A região liga e desliga conforme camisa, regata, manga, calça, bermuda e chinelo (sem chinelo, aparece o pé). Vestido e saia ganham uma saia de verdade: um tronco de cone da cintura ao joelho, abrindo embaixo e presa ao quadril, com a coxa de fora por baixo. Antes o vestido saía como maiô colado e parecia calça de longe.
+  - **Cabelo:** o do kit mais parecido e na cor do boneco, com barba em ~1 de cada 5 homens.
+- `userData.semCorpo = true` mantém a pessoa como boneco de caixas, mesmo de perto (a Emparedada translúcida de lendas.js). Escala e `visible` do grupo valem para o corpo novo, que é filho dele: a Comadre Fulozinha sai baixinha e some junto.
+- Custo: ~18 MB a mais (557 → 575 MB na média de duas medições) e a mesma carga. `?semgentereal` desliga. testar-tudo: "Tudo certo" (60/60).
+- Pé afundando no piso: o piso cor-de-rosa do Marco Zero (7,5 cm) e a Rosa dos Ventos (10 cm) ficam acima do chão que o jogo usa, e o tênis novo, mais baixo, sumia dentro do piso. Agora `pisoElevado(forma, altura)` (rua.js) registra pisos elevados, e `curbHeight`/`groundY` sobem neles.
 
 ## Cidade igual em toda carga
 - O que entra na grade de colisão não pode ser sorteado com `Math.random`: a grade muda, e com ela mudam as lojas, as mesas e os semáforos da rua (que olham `isSolid`/`isDrive`). Sorteio de coisa carimbada na colisão vem da posição (ex.: `frac(sin(x·12,9898 + z·78,233)·43758,5453)`, como `hashf` em rua.js). Sorteio só de aparência (rotação, cor, fase de animação) pode continuar com `Math.random`.
