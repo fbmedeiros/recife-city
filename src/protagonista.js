@@ -8,6 +8,20 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 const ALTURA = 1.75;
+// pele: a textura do kit é um moreno médio (média ~#a87450 nos dois corpos). O tom por cima leva a luminância da
+// pele à do tom escolhido (razão em linear; a cor do material passa de 1 quando é para clarear): galego claro,
+// Dandara retinta. Do matiz, só 25% da diferença: razão cheia por canal subia o azul 3,7× contra 2× do vermelho e
+// a pele clara ficava cinzenta; assim fica o calor natural da textura
+const PELE_MEDIA = [0.392, 0.174, 0.080], LUM = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
+const LUM_MEDIA = LUM(...PELE_MEDIA);
+const _pele = new THREE.Color();
+export function tintaPele(hex, alvo) {
+  _pele.set(hex);
+  // expoente 0,8: comprime os extremos (retinto não vira breu e perde o rosto; o claro não estoura)
+  const L = (LUM(_pele.r, _pele.g, _pele.b) / LUM_MEDIA) ** 0.8, m = 0.25;
+  const k = (i, v) => L * (1 + m * (v / PELE_MEDIA[i] / L - 1));
+  return alvo.setRGB(k(0, _pele.r), k(1, _pele.g), k(2, _pele.b));
+}
 const RUPA = {
   regata: { ossos: /^(spine_0[123]|clavicle_[lr])$/, infla: 0.012 },
   bermuda: { ossos: /^(pelvis|thigh_[lr])$/, infla: 0.014 },
@@ -44,12 +58,23 @@ function tecido(cor, rep = 8) {
 // carrega e veste o corpo. cores: { regata, bermuda, tenis, cabelo }. Devolve { raiz, mixer, acoes, tri }
 // corte da barbearia (barbearia.js / save.outfit.hair) → cabelo do kit. Os do kit são poucos: cacheado e black power
 // ficam com o social, tranças com o coque; careca fica sem
-const CABELOS = { short: 'Hair_SimpleParted.gltf', buzz: 'Hair_Buzzed.gltf', curly: 'Hair_SimpleParted.gltf', afro: 'Hair_SimpleParted.gltf', trancas: 'Hair_Buns.gltf', careca: null };
+// Corpo feminino (avatar.js). Os dois arquivos de corpo já trazem olhos e sobrancelhas
+const CABELOS = {
+  m: { short: 'Hair_SimpleParted.gltf', buzz: 'Hair_Buzzed.gltf', curly: 'Hair_SimpleParted.gltf', afro: 'Hair_SimpleParted.gltf', trancas: 'Hair_Buns.gltf', longo: 'Hair_SimpleParted.gltf', careca: null },
+  f: { short: 'Hair_Long.gltf', curly: 'Hair_Long.gltf', afro: 'Hair_Long.gltf', longo: 'Hair_Long.gltf', trancas: 'Hair_Buns.gltf', buzz: 'Hair_BuzzedFemale.gltf', careca: null },
+};
+const CORPO = {
+  m: { arq: 'Superhero_Male_FullBody.gltf', sobrancelha: null, altura: ALTURA },
+  f: { arq: 'Superhero_Female_FullBody.gltf', sobrancelha: null, altura: 1.66 },
+};
+// cores: { regata, bermuda, tenis, cabelo, corte, sexo: 'm'|'f', pele: '#hex', barba: bool }
 export async function carregarCorpo(cores = {}, anim = 'animacoes-jogo.glb') {
   const loader = new GLTFLoader().setPath('/personagens/');
   const load = (f) => (f ? new Promise((res, rej) => loader.load(f, res, undefined, rej)) : Promise.resolve(null));
-  const corte = cores.corte in CABELOS ? CABELOS[cores.corte] : 'Hair_Buzzed.gltf';
-  const [corpo, cabelo, barba, sobrancelha, anims] = await Promise.all(['Superhero_Male_FullBody.gltf', corte, 'Hair_Beard.gltf', 'Eyebrows_Regular.gltf', anim].map(load));
+  const sexo = cores.sexo === 'f' ? 'f' : 'm', K = CORPO[sexo], tab = CABELOS[sexo];
+  const corte = cores.corte in tab ? tab[cores.corte] : sexo === 'f' ? 'Hair_Long.gltf' : 'Hair_Buzzed.gltf';
+  const barbaArq = sexo === 'm' && cores.barba ? 'Hair_Beard.gltf' : null;
+  const [corpo, cabelo, barba, sobrancelha, anims] = await Promise.all([K.arq, corte, barbaArq, K.sobrancelha, anim].map(load));
   const raiz = corpo.scene;
   let body = null;
   raiz.traverse((o) => { if (o.isSkinnedMesh) { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; if (!body || o.geometry.attributes.position.count > body.geometry.attributes.position.count) body = o; } });
@@ -64,10 +89,12 @@ export async function carregarCorpo(cores = {}, anim = 'animacoes-jogo.glb') {
       for (const mt of [m.material].flat()) { mt.color?.set(cores.cabelo || '#3a2a20'); if (mt.transparent) mt.alphaTest = 0.4; }
     }
   }
+  // pele no tom escolhido (igual aos NPCs em corpos.js)
+  if (cores.pele) tintaPele(cores.pele, body.material.color);
   const cor = { regata: cores.regata || '#f4f1ea', bermuda: cores.bermuda || '#2f4f7a', tenis: cores.tenis || '#eeeeea' };
   for (const [nome, def] of Object.entries(RUPA)) { const r = peca(body, def, tecido(cor[nome], nome === 'tenis' ? 4 : 8)); r.name = nome; body.parent.add(r); }
   const box = new THREE.Box3().setFromObject(raiz);
-  raiz.scale.setScalar(ALTURA / (box.max.y - box.min.y));
+  raiz.scale.setScalar(K.altura / (box.max.y - box.min.y));
   const mixer = new THREE.AnimationMixer(raiz), acoes = {};
   for (const c of anims.animations) acoes[c.name] = mixer.clipAction(c);
   let tri = 0; raiz.traverse((o) => { if (o.isMesh) tri += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
@@ -101,11 +128,12 @@ export function acessorios(C, host) {
   const itens = [...u.upper.children.slice(u.upper.children.indexOf(u.head) + 1), ...daCabeca];
   if (!itens.length) return;
   // matriz da peça no espaço do tronco
-  const noTronco = (o) => { const m = new THREE.Matrix4(); let p = o; while (p && p !== u.upper) { p.updateMatrix(); m.premultiply(p.matrix); p = p.parent; } return m; };
+  // (a cabeça de caixa entra em descanso: só a posição e a escala, sem o giro de olhar em volta daquele quadro)
+  const cabecaRest = new THREE.Matrix4().compose(u.head.position, new THREE.Quaternion(), u.head.scale);
+  const noTronco = (o) => { const m = new THREE.Matrix4(); let p = o; while (p && p !== u.upper) { p.updateMatrix(); m.premultiply(p === u.head ? cabecaRest : p.matrix); p = p.parent; } return m; };
   // cabeça de caixa no espaço do tronco (em descanso o tronco coincide com o boneco)
   const hb = new THREE.Box3(), tmp = new THREE.Box3();
-  u.head.updateMatrix();
-  for (const f of u.head.children.slice(0, fixos)) f.traverse((o) => { if (o.isMesh) { o.geometry.computeBoundingBox(); o.updateMatrix(); tmp.copy(o.geometry.boundingBox).applyMatrix4(o.matrix).applyMatrix4(u.head.matrix); hb.union(tmp); } });
+  for (const f of u.head.children.slice(0, fixos)) f.traverse((o) => { if (o.isMesh) { o.geometry.computeBoundingBox(); o.updateMatrix(); tmp.copy(o.geometry.boundingBox).applyMatrix4(o.matrix).applyMatrix4(cabecaRest); hb.union(tmp); } });
   // alinha as duas cabeças pelo topo e pela frente do rosto (a de caixa inclui pescoço e cabelo, então o centro
   // dela fica em outro lugar), com a escala pela largura
   const bc = hb.getCenter(new THREE.Vector3()), nc = C.cabeca.getCenter(new THREE.Vector3());
@@ -119,7 +147,7 @@ export function acessorios(C, host) {
     if (!C.bones[osso]) continue;
     // T: da cabeça de caixa para a cabeça nova (no peito, só a escala da altura)
     // chapéu (peça toda acima de 1,73 m) sobe a altura de um cabelo: a cabeça de caixa mede com o cabelo, a nova não
-    if (naCabeca) _T.makeTranslation(nc.x, C.cabeca.max.y + (lb.min.y > 1.73 ? 0.04 : 0), C.cabeca.max.z).multiply(_S.makeScale(s, s, s)).multiply(_A.makeTranslation(-bc.x, -hb.max.y, -hb.max.z));
+    if (naCabeca) _T.makeTranslation(nc.x, C.cabeca.max.y + (!daCabeca.has(o) && lb.min.y > 1.73 ? 0.04 : 0), C.cabeca.max.z).multiply(_S.makeScale(s, s, s)).multiply(_A.makeTranslation(-bc.x, -hb.max.y, -hb.max.z));
     else _T.makeScale(0.95, 0.95, 0.95);
     const W = new THREE.Group();
     W.matrixAutoUpdate = false;
@@ -148,7 +176,7 @@ export function protagonista() {
     attach(mesh, outfit = {}) {
       host = mesh;
       if (desligado) return;
-      const novas = { regata: outfit.stripes || outfit.shirt, bermuda: outfit.pants, tenis: outfit.shoes, cabelo: outfit.hairColor, corte: outfit.hair };
+      const novas = { regata: outfit.stripes || outfit.shirt, bermuda: outfit.pants, tenis: outfit.shoes, cabelo: outfit.hairColor, corte: outfit.hair, sexo: outfit.sexo, pele: outfit.skin, barba: !!outfit.barba };
       const mudou = JSON.stringify(novas) !== JSON.stringify(cores);
       cores = novas;
       if (C && !mudou) { mesh.add(C.raiz); esconderCaixas(mesh); acessorios(C, mesh); return; }

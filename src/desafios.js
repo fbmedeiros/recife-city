@@ -25,6 +25,7 @@ const POOL = [
   { k: 'capoeira', n: 1, txt: 'Assiste a roda de capoeira no Marco Zero', premio: 15 },
   { k: 'forro', n: 1, txt: 'Curte o forró no Mercado da Boa Vista', premio: 15 },
   { k: 'pipa', n: 1, txt: 'Apara uma pipa no morro', premio: 20 },
+  { k: 'picole_venda', n: 6, txt: 'Vende 6 picolés na areia de Boa Viagem', premio: 25 },
   { k: 'corrida_orla', n: 1, txt: 'Completa a Corrida da Orla em Boa Viagem', premio: 30 },
   { k: 'quadrilha', n: 1, txt: 'Dança o ensaio da quadrilha no Sítio da Trindade', premio: 25 },
   { k: 'caranguejo', n: 1, txt: 'Compra uma corda de caranguejo no mangue', premio: 15 },

@@ -84,6 +84,12 @@ export class Shop {
         act: () => this.buy(25, () => { const h = save.home || this.marcoZero; this.teleport(h.x, h.z); }, 'Chegou!'),
       },
     ];
+    // trocar de personagem (avatar.js): cada toque passa pro próximo
+    if (this.avatar) {
+      const A = this.avatar.atual, todos = this.avatar.todos, prox = todos[(todos.indexOf(A) + 1) % todos.length];
+      list.push({ title: `Personagem: ${A.nome}`, desc: `${A.sub} Toca pra virar ${prox.nome}. (Também dá pra escolher na tela de início.)`, price: 0, state: 'Trocar', disabled: !!this.player.vehicle,
+        act: () => { this.avatar.escolhe(prox.id); this.hud.flash(`Agora tu é ${prox.nome}!`); } });
+    }
     // negócios que rendem por hora de jogo
     for (const n of NEGOCIOS) {
       const tem = (save.negocios || []).includes(n.id);

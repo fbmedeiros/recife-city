@@ -534,7 +534,9 @@ const HAIRS = {
 // barba (mesma cor do cabelo), centro = centro da cabeça
 const beardGeo = bake([[new THREE.SphereGeometry(0.085, 14, 10, 0, Math.PI * 2, Math.PI * 0.45, Math.PI * 0.55), [0.92, 0.9, 0.98], [0, -0.035, 0.024]]]);
 const hairCache = {};
-const hairGeo = (k) => (hairCache[k] ||= HAIRS[k]());
+// nomes em português que vêm de fora (avatar.js) e nome desconhecido caem num estilo que existe
+const HAIR_ALIAS = { longo: 'long' };
+const hairGeo = (k) => { k = HAIR_ALIAS[k] || k; if (!HAIRS[k]) k = 'short'; return (hairCache[k] ||= HAIRS[k]()); };
 // jeans: sarja azul com ruído
 let denimTex;
 function denim() {

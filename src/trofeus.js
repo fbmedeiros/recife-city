@@ -40,6 +40,8 @@ export const TROFEUS = [
   { id: 'mamulengo', k: 'mamulengo', n: 1, nome: 'Mamulengueiro', desc: 'Assistiu o mamulengo no Pátio de São Pedro.', premio: 15 },
   { id: 'coco', k: 'coco', n: 1, nome: 'Embolada', desc: 'Assistiu os emboladores de coco no Mercado de São José.', premio: 15 },
   { id: 'artista5', k: 'artista', n: 5, nome: 'Mecenas da rua', desc: 'Jogou 5 moedas pros artistas de rua.', premio: 15 },
+  { id: 'noel', k: 'noel', n: 1, nome: 'Bom Velhinho', desc: 'Tirou foto com o Papai Noel suado do Marco Zero.', premio: 15 },
+  { id: 'picole', k: 'picole', n: 1, nome: 'Olha o picolé!', desc: 'Vendeu o isopor inteiro, 12 picolés, na areia de Boa Viagem.', premio: 25 },
   { id: 'corrida_orla', k: 'corrida_orla', n: 1, nome: 'Peito nº 1', desc: 'Completou a Corrida da Orla, 2 km no calçadão de Boa Viagem.', premio: 20 },
   { id: 'corrida_podio', k: 'corrida_podio', n: 1, nome: 'Pódio na orla', desc: 'Chegou entre os três primeiros na Corrida da Orla.', premio: 30 },
   { id: 'corrida_vitoria', k: 'corrida_vitoria', n: 1, nome: 'Campeão da orla', desc: 'Ganhou a Corrida da Orla.', premio: 60 },

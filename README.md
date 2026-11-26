@@ -326,6 +326,9 @@ O script abre o jogo num Chrome sem janela (perfil novo, save vazio) e joga um p
 - se inscreve na Corrida da Orla e corre os 2 km pelo calçadão até a chegada;
 - entra no ensaio da quadrilha junina no Sítio da Trindade e acompanha as 8 figuras;
 - faz a caçada às 10 Lendas do Recife inteira (dica do bairro, cada lenda achada, ranking e aba do celular);
+- troca pelos 6 personagens (cartões da tela de início, save e boneco certo) e confere que o corte da barbearia zera;
+- monta o Natal no Marco Zero (e confere que fora da época não monta) e tira foto com o Papai Noel;
+- pega o isopor no quiosque de picolé e vende os 12 picolés pros banhistas da areia;
 - liga o toró com alagamento;
 - passa pelo álbum, pelas oito abas do celular, pelo bloco de frevo e pelo som ambiente;
 - para num sinal vermelho, espera o ambulante e compra;
@@ -840,6 +843,50 @@ Das 6h às 10h, no calçadão de Boa Viagem, a largada fica no Parque Dona Lindu
 - Troféus: Peito nº 1, Pódio na orla, Campeão da orla. Entra no sorteio dos desafios do dia e na Agenda do celular.
 - A corrida e o nome são inventados.
 
+## Escolha de personagem (`src/avatar.js`)
+Seis personagens do Recife, com nomes e histórias inventados:
+
+| Personagem | Quem é |
+|---|---|
+| Biu do Frevo | Passista desde menino, sobe ladeira de Olinda sem perder o passo. Pele negra, cabelo raspado e barba. |
+| Dandara do Maracatu | Batuqueira do baque virado. Pele negra, tranças presas no coque. |
+| Galego da Orla | Mora em Boa Viagem, vive vermelho do sol e jura que viu o tubarão. Pele clara, cabelo loiro. |
+| Júlia de Casa Amarela | Faz corrida de app e conhece todo atalho (e todo buraco). Pele morena, cabelo longo. |
+| Kaê do Passinho | Dança brega-funk em qualquer calçada, cabelo platinado ("nevou"). Pele parda. |
+| Seu Severino | Aposentado, rei do dominó da praça. Cabelo e barba grisalhos. |
+
+**Onde escolher:**
+- **Tela de início:** os seis aparecem acima do JOGAR, com retrato desenhado (SVG feito com as cores de cada um); a história do escolhido aparece embaixo.
+- **Celular:** na aba **Serviços**, "Personagem: …", cada toque passa pro próximo.
+
+A escolha fica salva (`save.avatar`, padrão Biu). Cada personagem tem seu corpo (masculino ou feminino), tom de pele, cabelo e cor de cabelo, barba ou não, e roupa (regata, bermuda e tênis nas cores dele). O corte da barbearia vale por cima do cabelo do personagem, e trocar de personagem zera o corte. Boné, óculos e camisa da loja continuam valendo.
+
+`outfitOpts()` (main.js) passa `sexo`, `skin` e `barba` pro corpo de verdade (`protagonista.js`). Para testar: `game.avatar.escolhe('dandara')`.
+
+## Natal no Marco Zero (`src/natal.js`)
+Do dia 15 de novembro ao Dia de Reis (6 de janeiro), pela data do computador, a praça do Marco Zero ganha uma árvore de Natal gigante: 16 m de argolas verdes empilhadas em cima de uma base vermelha, com presentes no pé, uma estrela dourada girando no topo e centenas de luzinhas de seis cores piscando em três grupos alternados. A árvore fica num largo livre a pelo menos 18 m do Marco Zero, longe da pista e da roda de capoeira.
+
+Na frente dela fica o Papai Noel de roupa vermelha completa, gorro e barba, se abanando no calor e reclamando ("Ho ho ho! Que calor da gota!", "Ano que vem eu venho de bermuda.", "As renas foram tomar banho em Boa Viagem.").
+- **Foto com o Papai Noel:** a pé, perto dele, **B** tira foto por R$ 10 e faz um pedido sorteado ("um ar-condicionado que não pinga", "que a Agamenon não alague nunca mais", "uma vaga pra estacionar no Recife Antigo"…). Ele levanta os braços pra pose. No toque, o botão de ação vira "foto".
+- **Extras:** troféu "Bom Velhinho" e entrada na agenda do celular ("até o Dia de Reis").
+- **Teste:** `game.natal.forca = true` (ou `false`) força a época; `null` volta à data do computador.
+
+## Bico de picolé na areia (`src/picole.js`)
+A areia de Boa Viagem agora tem guarda-sol colorido com banhista sentado na canga, olhando pro mar: até dois por trecho de 14 m, num raio de ~260 m em volta da câmera. Cada guarda-sol é sorteado uma vez pelo trecho e volta sempre no mesmo lugar.
+
+No calçadão, uns 250 m ao sul do Parque Dona Lindu, fica o quiosque **Picolé Arretado** (balcão-freezer azul e branco, toldo amarelo e o dono de boné).
+- **Pegar o isopor:** a pé, perto do quiosque, **B** pega um isopor com 12 picolés, que vai na mão do jogador.
+- **Freguês:** de tempos em tempos, um banhista a até 40 m levanta a mão e grita ("Ô do picolé!"). Perto dele, **B** vende por R$ 4, de um sabor sorteado (coco, graviola, cajá, tapioca, milho verde, maracujá, umbu, açaí). Três em cada dez dão R$ 2 de gorjeta.
+- **Pregão:** sem freguês perto, **B** grita ("Olha o picolé! Coco, graviola, cajá!") e até dois banhistas em volta chamam.
+- **Fim:** vendendo tudo aparece "Vendeu o isopor todinho!". Depois de 4 minutos, "O resto derreteu!". Entrar num carro ou ficar 12 s fora da praia larga o isopor.
+
+O placar fica no objetivo da tela (picolés no isopor, quanto ganhou e o tempo até derreter). No toque, o botão de ação vira "pegar", "vender" ou "gritar". Quem já comprou não compra de novo na mesma sessão.
+
+Também conta:
+- troféu "Olha o picolé!", por vender o isopor inteiro;
+- desafio do dia "Vende 6 picolés";
+- entrada na agenda do celular ("o dia todo").
+
 ## Sinos das igrejas (`src/sinos.js`, `audio.sino`)
 A cada hora cheia do jogo, a igreja mais perto do jogador (a menos de 450 m) bate o sino uma vez por hora, como relógio de 12 horas (15h dá 3 batidas), uma a cada 1,6 s. As igrejas vêm dos lugares de culto do mapa e dos nomes com igreja, basílica, capela, matriz, convento, concatedral ou paróquia. O sino é sintetizado com parciais de sino (fundamental, terça menor, quinta, oitava e um "hum" grave) que demoram a sumir, com o volume pela distância. Quando o relógio volta das 17h pras 6h, não toca.
 
@@ -1214,6 +1261,11 @@ Fotos do jogo (Chrome sem janela, câmera livre, 11h30) lado a lado com fotos do
 ## Protagonista com corpo de verdade (26/11) — `src/protagonista.js`
 - O protagonista agora tem um corpo humano com esqueleto de 65 ossos (~21 mil triângulos com cabelo e roupa), pele com relevo e animação de verdade. Ele troca sozinho entre parado, andar (a passada acompanha a velocidade), correr, no pique, no ar, dançando, sentado no barco e nadando. No carro some, como antes.
 - O boneco de caixas continua existindo, invisível, porque o resto do jogo mexe nas peças dele (passinho, pulo, barco, colisão). O corpo novo é filho dele, então herda posição, giro e visibilidade. No `main.js` são três linhas: `attach` na criação e na troca de roupa, e `update` a cada quadro. `?bonecovelho` volta ao boneco de caixas.
+- Avatar escolhido (avatar.js): `attach(mesh, outfit)` lê `outfit.sexo` ('m'/'f'), `outfit.skin` e `outfit.barba`, e recarrega o corpo quando algum deles muda.
+  - O corpo feminino usa `Superhero_Female_FullBody` (1,66 m). Os dois arquivos de corpo já trazem olhos e sobrancelhas.
+  - Cabelo da mulher: short, curly, afro e longo viram o longo; tranças viram coque; buzz vira o raspado; careca fica sem cabelo. Homem com `longo` fica com o social.
+  - Barba só com `outfit.barba`, na cor do cabelo.
+  - Pele (protagonista e NPCs, `tintaPele` em protagonista.js): a textura do kit é um moreno médio (~#a87450), e a textura "clara" é quase igual a ela. O tom por cima leva a luminância da pele à do tom escolhido, pela razão em linear com expoente 0,8 para o retinto não virar breu. Do matiz entra só 25% da diferença: com a razão cheia por canal, a pele clara ficava cinzenta. O galego (#e8b896) sai claro, a Dandara (#4a2e1e) retinta com o rosto visível, e os NPCs vão do #f3cfae ao #4a2f22.
 - A roupa segue o save: a regata pega a cor da camisa, a bermuda a da calça, o tênis a do sapato e o cabelo a cor escolhida. O corte da barbearia vira um dos cabelos do kit: social, máquina, coque nas tranças e careca. Cacheado e black power ficam com o social, porque o kit gratuito não tem esses. Boné, chapéu de cangaceiro, óculos e sombrinha da loja aparecem no corpo novo: são as mesmas peças do boneco de caixas, copiadas e presas nos ossos. Chapéu e óculos vão na cabeça, alinhados pelo topo e pela frente do rosto e na escala da largura da cabeça nova. A sombrinha vai no peito, do lado direito.
 - No passinho, o corpo novo dança uma dança só (`Dance_Loop`). Os passos com nome do passinho continuam só no boneco de caixas.
 - Arquivos: corpo, cabelos e animações da Quaternius, CC0 (Universal Base Characters e Universal Animation Library, versões gratuitas). Ficam em `public/personagens/` (4,4 MB). `animacoes-jogo.glb` traz só as 16 animações que o jogo usa (2,8 MB, contra 7,6 MB do pacote inteiro). As texturas foram reduzidas a 1024 px, e a licença está em `LICENCA-Quaternius-CC0.txt`.
@@ -1228,10 +1280,13 @@ Fotos do jogo (Chrome sem janela, câmera livre, 11h30) lado a lado com fotos do
 - Os módulos não mudam: cada pessoa continua sendo o boneco de `makePerson`, posado pelas juntas (`userData.legL`, `armR`, `upper`, `head`…) e por `animatePerson`. A cada quadro a pose das juntas é copiada para os ossos: coxa, canela, braço, antebraço, tronco e cabeça, com o lado tirado da posição e a pose de referência do primeiro quadro de "parado". Dança, capoeira, dominó, instrumentos e o resto continuam valendo.
 - Só as peças de caixa criadas por `makePerson` somem (`userData.caixas`). O que os módulos penduram depois (pandeiro, véu, moicano) continua visível, preso na junta de caixa. Boné, óculos e sombrinha da pessoa vão para os ossos, como no protagonista.
 - O visual vem de `userData.look`, gravado em `makePerson`:
-  - **Pele:** textura clara ou escura pelo tom do boneco, com um tom por cima.
+  - **Pele:** o tom do boneco por cima da textura (`tintaPele`, ver acima).
   - **Roupa:** uma malha só, com uma cor por região (tronco, braço, antebraço, quadril/coxa, canela, pé) num shader. A região liga e desliga conforme camisa, regata, manga, calça, bermuda e chinelo (sem chinelo, aparece o pé). Vestido e saia ganham uma saia de verdade: um tronco de cone da cintura ao joelho, abrindo embaixo e presa ao quadril, com a coxa de fora por baixo. Antes o vestido saía como maiô colado e parecia calça de longe.
   - **Cabelo:** o do kit mais parecido e na cor do boneco, com barba em ~1 de cada 5 homens.
 - `userData.semCorpo = true` mantém a pessoa como boneco de caixas, mesmo de perto (a Emparedada translúcida de lendas.js). Escala e `visible` do grupo valem para o corpo novo, que é filho dele: a Comadre Fulozinha sai baixinha e some junto.
+- O que um módulo põe na cabeça de caixa (`userData.head.add(...)`, depois do rosto, cabelo e barba que `makePerson` monta) também vai para o osso da cabeça do corpo novo: o véu da noiva do casamento, o moicano dos punks, o capacete do mototaxista. `head.userData.fixos` diz quantos filhos da cabeça são do próprio boneco; o resto é acessório. Se o número de peças no tronco ou na cabeça mudar depois, a cópia é refeita.
+- Custo: cada corpo de perto tem ~24 mil triângulos em 6 malhas com esqueleto (corpo, roupa, cabelo, olhos, sobrancelhas, saia). Só o corpo e a saia projetam sombra (o resto fica dentro do contorno), e só até 20 m. Como malha com esqueleto não se recorta sozinha pela câmera, cada pessoa some inteira quando uma esfera de 2,5 m em volta dela sai da vista. Medido no Chrome sem janela, no Marco Zero com 16 corpos ativos: o custo caiu de ~20% para ~10% dos quadros, comparando com `?semgentereal`. A CPU gasta ~1 ms por quadro com eles (`window.genteReal.ms`).
+- Pele coberta não é desenhada. Para cada combinação de partes vestidas (tronco, braço, antebraço, coxa, canela, pé), o corpo fica só com o que aparece, mais uma fileira de triângulos sob a borda da roupa para a costura não abrir. A malha de roupa também só desenha as partes vestidas. Esses índices são guardados por combinação e todos os corpos usam os mesmos vértices. A roupa projeta sombra junto com o corpo. No Marco Zero ficaram ~91 mil triângulos com esqueleto na tela, contra ~396 mil antes, e o custo caiu para ~7% dos quadros.
 - Custo: ~18 MB a mais (557 → 575 MB na média de duas medições) e a mesma carga. `?semgentereal` desliga. testar-tudo: "Tudo certo" (60/60).
 - Pé afundando no piso: o piso cor-de-rosa do Marco Zero (7,5 cm) e a Rosa dos Ventos (10 cm) ficam acima do chão que o jogo usa, e o tênis novo, mais baixo, sumia dentro do piso. Agora `pisoElevado(forma, altura)` (rua.js) registra pisos elevados, e `curbHeight`/`groundY` sobem neles.
 

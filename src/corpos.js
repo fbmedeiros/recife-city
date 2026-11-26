@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkel } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { acessorios } from './protagonista.js';
+import { acessorios, tintaPele } from './protagonista.js';
 // peças penduradas no tronco e na cabeça: se o número muda (um módulo pôs chapéu, véu...), recopia os acessórios
 const nPecas = (u) => (u.upper?.children.length || 0) + (u.head?.children.length || 0) * 1000;
 
@@ -29,18 +29,17 @@ export function registrarPessoa(g) { if (!DESLIGADO && !g.userData.look?.player)
 // regiões da roupa pelo osso principal do vértice
 const REGIOES = [/^(spine_0[123]|clavicle_[lr])$/, /^upperarm_[lr]$/, /^lowerarm_[lr]$/, /^(pelvis|thigh_[lr])$/, /^calf_[lr]$/, /^(foot_[lr]|ball_[lr])$/];
 const BASE = {
-  m: { corpo: 'Superhero_Male_FullBody.gltf', altura: 1.74, cabelos: { curto: 'Hair_SimpleParted.gltf', raspado: 'Hair_Buzzed.gltf', barba: 'Hair_Beard.gltf' }, clara: 'corpo_cor_clara.jpg' },
-  f: { corpo: 'Superhero_Female_FullBody.gltf', altura: 1.64, cabelos: { longo: 'Hair_Long.gltf', coque: 'Hair_Buns.gltf', raspado: 'Hair_BuzzedFemale.gltf' }, clara: 'corpoF_cor_clara.jpg' },
+  m: { corpo: 'Superhero_Male_FullBody.gltf', altura: 1.74, cabelos: { curto: 'Hair_SimpleParted.gltf', raspado: 'Hair_Buzzed.gltf', barba: 'Hair_Beard.gltf' } },
+  f: { corpo: 'Superhero_Female_FullBody.gltf', altura: 1.64, cabelos: { longo: 'Hair_Long.gltf', coque: 'Hair_Buns.gltf', raspado: 'Hair_BuzzedFemale.gltf' } },
 };
 // estilo de cabelo do boneco de caixas → cabelo do kit
 const CABELO = {
-  m: { short: 'curto', buzz: 'raspado', curly: 'curto', afro: 'curto', careca: null, long: 'curto', bun: 'curto', rabo: 'curto', trancas: 'curto' },
-  f: { long: 'longo', bun: 'coque', rabo: 'longo', trancas: 'coque', afro: 'coque', curly: 'longo', short: 'raspado', buzz: 'raspado', careca: null },
+  m: { short: 'curto', buzz: 'raspado', curly: 'curto', afro: 'curto', careca: null, long: 'curto', longo: 'curto', bun: 'curto', rabo: 'curto', trancas: 'curto' },
+  f: { long: 'longo', longo: 'longo', bun: 'coque', rabo: 'longo', trancas: 'coque', afro: 'coque', curly: 'longo', short: 'raspado', buzz: 'raspado', careca: null },
 };
 
 const loader = new GLTFLoader().setPath('/personagens/');
 const load = (f) => new Promise((res, rej) => loader.load(f, res, undefined, rej));
-const texLoader = new THREE.TextureLoader().setPath('/personagens/');
 let modelos = null; // { m, f } quando carregados
 
 // trama de tecido branca: a cor vem da região
@@ -73,14 +72,16 @@ async function montarModelo(k, anims) {
   const [base, ...extras] = await Promise.all([B.corpo, ...nomes.map(([, f]) => f)].map(load));
   const raiz = base.scene;
   let body = null;
-  raiz.traverse((o) => { if (o.isSkinnedMesh) { o.frustumCulled = false; o.castShadow = o.receiveShadow = true; if (!body || o.geometry.attributes.position.count > body.geometry.attributes.position.count) body = o; } });
+  raiz.traverse((o) => { if (o.isSkinnedMesh) { o.frustumCulled = false; o.receiveShadow = true; o.castShadow = false; if (!body || o.geometry.attributes.position.count > body.geometry.attributes.position.count) body = o; } });
+  // sombra só do corpo: roupa, cabelo, olhos e sobrancelhas ficam dentro do contorno dele e só dobravam o custo
+  body.castShadow = true;
   const porNome = {}; body.skeleton.bones.forEach((b) => (porNome[b.name] = b));
   // cabelos
   nomes.forEach(([nome], i) => {
     const ms = []; extras[i].scene.traverse((o) => { if (o.isSkinnedMesh) ms.push(o); }); // junta antes: tirar da cena no meio da varredura quebra a varredura
     ms.forEach((m) => {
       const sk = new THREE.Skeleton(m.skeleton.bones.map((b) => porNome[b.name] || b), m.skeleton.boneInverses);
-      m.removeFromParent(); body.parent.add(m); m.bind(sk, m.bindMatrix); m.frustumCulled = false; m.castShadow = true; m.name = 'cabelo:' + nome; m.visible = false;
+      m.removeFromParent(); body.parent.add(m); m.bind(sk, m.bindMatrix); m.frustumCulled = false; m.castShadow = false; m.name = 'cabelo:' + nome; m.visible = false;
       for (const mt of [m.material].flat()) if (mt.transparent) mt.alphaTest = 0.4;
     });
   });
@@ -91,10 +92,10 @@ async function montarModelo(k, anims) {
     let b = 0, w = -1; for (let q = 0; q < 4; q++) { const ww = sw.getComponent(v, q); if (ww > w) { w = ww; b = si.getComponent(v, q); } }
     regV[v] = REGIOES.findIndex((re) => re.test(bones[b].name));
   }
-  const idx = g.index.array, keep = [], regT = [];
+  const idx = g.index.array, keep = [], regT = [], regCorpo = new Int8Array(idx.length / 3).fill(-1);
   for (let t = 0; t < idx.length; t += 3) {
     const r = [regV[idx[t]], regV[idx[t + 1]], regV[idx[t + 2]]].filter((x) => x >= 0);
-    if (r.length >= 2) { keep.push(t / 3); regT.push(r.sort((a, b) => a - b)[r.length >> 1]); }
+    if (r.length >= 2) { keep.push(t / 3); regT.push(r.sort((a, b) => a - b)[r.length >> 1]); regCorpo[t / 3] = regT.at(-1); }
   }
   const ni = g.toNonIndexed(), out = new THREE.BufferGeometry();
   for (const [nome, at] of Object.entries(ni.attributes)) {
@@ -107,7 +108,7 @@ async function montarModelo(k, anims) {
   const p = out.attributes.position, nr = out.attributes.normal;
   for (let v = 0; v < p.count; v++) { const d = reg[v] === 5 ? 0.01 : 0.013; p.setXYZ(v, p.getX(v) + nr.getX(v) * d, p.getY(v) + nr.getY(v) * d, p.getZ(v) + nr.getZ(v) * d); }
   const roupa = new THREE.SkinnedMesh(out, materialRoupa()); roupa.name = 'roupa';
-  roupa.bind(body.skeleton, body.bindMatrix); roupa.frustumCulled = false; roupa.castShadow = roupa.receiveShadow = true;
+  roupa.bind(body.skeleton, body.bindMatrix); roupa.frustumCulled = false; roupa.castShadow = false; roupa.receiveShadow = true;
   body.parent.add(roupa);
   body.name = 'corpo';
   // altura
@@ -164,8 +165,8 @@ async function montarModelo(k, anims) {
     ['upperarm_' + ladoL, ['upper', 'armL']], ['lowerarm_' + ladoL, ['upper', 'armL', 'elbowL']],
     ['upperarm_' + ladoR, ['upper', 'armR']], ['lowerarm_' + ladoR, ['upper', 'armR', 'elbowR']],
   ];
-  const clara = texLoader.load(B.clara); clara.colorSpace = THREE.SRGBColorSpace; clara.flipY = false;
-  return { k, raiz, refLocal, refWorld, ossoRest, cabeca, MAPA, clara, escura: body.material.map, escala: raiz.scale.x };
+  return { k, raiz, refLocal, refWorld, ossoRest, cabeca, MAPA, escala: raiz.scale.x,
+    corte: { idxCorpo: idx.slice(), regCorpo, regRoupa: Int8Array.from(regT), nV: si.count, cache: new Map() } };
 }
 
 function carregarModelos() {
@@ -177,6 +178,34 @@ function carregarModelos() {
 function carregar() {}
 
 // um corpo do conjunto (clone do modelo, com materiais próprios para cor de pele, cabelo e roupa)
+// geometria própria (para trocar o índice) com os mesmos atributos do modelo: nada de vértice duplicado na memória
+function partilha(src) {
+  const g = new THREE.BufferGeometry();
+  for (const [n, a] of Object.entries(src.attributes)) g.setAttribute(n, a);
+  if (src.index) g.setIndex(src.index);
+  g.boundingBox = src.boundingBox; g.boundingSphere = src.boundingSphere;
+  return g;
+}
+// pele coberta não é desenhada: para cada combinação de regiões vestidas (bit 0 tronco ... 5 pé), o corpo fica só
+// com o que aparece mais uma fileira de triângulos por baixo da borda da roupa (a roupa é inflada 1 cm e, sem essa
+// folga, a costura mostraria o vão), e a roupa só com as regiões vestidas. Índices guardados por combinação
+function cortes(M, mask) {
+  const K = M.corte;
+  let c = K.cache.get(mask); if (c) return c;
+  const { idxCorpo, regCorpo, regRoupa, nV } = K, nT = regCorpo.length;
+  const coberto = (r) => r >= 0 && (mask >> r) & 1;
+  const aberto = new Uint8Array(nV); // vértice que encosta em algum triângulo à mostra
+  for (let t = 0; t < nT; t++) if (!coberto(regCorpo[t])) { aberto[idxCorpo[t * 3]] = 1; aberto[idxCorpo[t * 3 + 1]] = 1; aberto[idxCorpo[t * 3 + 2]] = 1; }
+  const corpo = [];
+  for (let t = 0; t < nT; t++) { const a = idxCorpo[t * 3], b = idxCorpo[t * 3 + 1], d = idxCorpo[t * 3 + 2]; if (!coberto(regCorpo[t]) || aberto[a] || aberto[b] || aberto[d]) corpo.push(a, b, d); }
+  const roupa = [];
+  for (let t = 0; t < regRoupa.length; t++) if (coberto(regRoupa[t])) roupa.push(t * 3, t * 3 + 1, t * 3 + 2);
+  const Arr = nV > 65535 ? Uint32Array : Uint16Array;
+  c = { corpo: new THREE.BufferAttribute(Arr.from(corpo), 1), roupa: new THREE.BufferAttribute((regRoupa.length * 3 > 65535 ? Uint32Array : Uint16Array).from(roupa), 1) };
+  K.cache.set(mask, c);
+  return c;
+}
+
 function novoCorpo(M) {
   const raiz = cloneSkel(M.raiz);
   const I = { k: M.k, M, raiz, bones: {}, cabelos: {}, dono: null, acess: [] };
@@ -184,8 +213,8 @@ function novoCorpo(M) {
     if (o.isBone) I.bones[o.name] = o;
     if (!o.isSkinnedMesh) return;
     o.frustumCulled = false;
-    if (o.name === 'corpo') { o.material = o.material.clone(); I.corpo = o; }
-    else if (o.name === 'roupa') { const m = materialRoupa(); o.material = m; I.roupa = m; }
+    if (o.name === 'corpo') { o.material = o.material.clone(); o.geometry = partilha(o.geometry); I.corpo = o; }
+    else if (o.name === 'roupa') { const m = materialRoupa(); o.material = m; o.geometry = partilha(o.geometry); I.roupa = m; I.roupaM = o; }
     else if (o.name === 'saia') { o.material = o.material.clone(); I.saia = o; }
     else if (o.name.startsWith('cabelo:')) { o.material = [o.material].flat().map((x) => x.clone()); if (o.material.length === 1) o.material = o.material[0]; I.cabelos[o.name.slice(7)] = o; }
   });
@@ -197,12 +226,8 @@ function novoCorpo(M) {
 
 const _c = new THREE.Color();
 function vestir(I, look, g) {
-  // pele: textura clara ou escura pelo tom do boneco, e um tom por cima
-  _c.set(look.pele);
-  const lum = 0.299 * _c.r + 0.587 * _c.g + 0.114 * _c.b;
-  I.corpo.material.map = lum > 0.62 ? I.M.clara : I.M.escura;
-  I.corpo.material.color.setRGB(1, 1, 1).lerp(_c.multiplyScalar(lum > 0.62 ? 1.25 : 1.6), 0.3);
-  I.corpo.material.needsUpdate = true;
+  // pele no tom do boneco (tintaPele, protagonista.js: razão entre o tom e a média da textura)
+  tintaPele(look.pele, I.corpo.material.color);
   // roupa por região: 0 tronco, 1 braço, 2 antebraço, 3 quadril/coxa, 4 canela, 5 pé
   const C = I.roupa.userData.cores.value, set = (i, cor) => { if (cor) { _c.set(cor); C[i].set(_c.r, _c.g, _c.b, 1); } else C[i].w = 0; };
   const top = look.top, bot = look.bottom;
@@ -215,6 +240,9 @@ function vestir(I, look, g) {
   set(3, saia ? null : look.calca);
   set(4, bot === 'calca' ? look.calca : null);
   set(5, look.sapato);
+  let mask = 0; for (let i = 0; i < 6; i++) if (C[i].w > 0) mask |= 1 << i;
+  const ct = cortes(I.M, mask);
+  I.corpo.geometry.setIndex(ct.corpo); I.roupaM.geometry.setIndex(ct.roupa); I.roupaM.visible = mask !== 0;
   // porte: o corpo do kit é de "super-herói"; cada pessoa sorteia magro, médio ou forte (braço e coxa mais finos,
   // tronco um pouco mais estreito). Idoso fica médio
   const h = ((g.id * 2654435761) >>> 0) % 100, fem = I.k === 'f';
@@ -250,7 +278,7 @@ function prender(g) {
   let I = livres[k].pop();
   if (!I) { if (criados >= MAX + 4) return false; I = novoCorpo(modelos[k]); criados++; }
   vestir(I, look, g);
-  g.add(I.raiz); I.dono = g;
+  g.add(I.raiz); I.dono = g; I.raiz.visible = true;
   for (const m of g.userData.caixas || []) m.visible = false;
   acessorios(I, g); I.nUpper = nPecas(g.userData);
   for (const m of g.userData.acessorios || []) m.visible = false;
@@ -308,11 +336,12 @@ function posar(g, I, dt) {
 
 const _p = new THREE.Vector3();
 let quadro = 0;
+const _fr = new THREE.Frustum(), _pm = new THREE.Matrix4(), _esf = new THREE.Sphere(new THREE.Vector3(), 2.5);
 export function atualizarGente(camera) {
   if (DESLIGADO || modelos === false) return;
   if (!modelos) { carregarModelos(); return; }
   quadro++;
-  const agora = performance.now(), dt = Math.min(0.1, (agora - (atualizarGente.t || agora)) / 1000); atualizarGente.t = agora;
+  const agora = performance.now(), t0 = agora, dt = Math.min(0.1, (agora - (atualizarGente.t || agora)) / 1000); atualizarGente.t = agora;
   // candidatos: visíveis e perto da câmera
   const perto = [];
   for (const g of PESSOAS) {
@@ -321,7 +350,7 @@ export function atualizarGente(camera) {
     if (g.userData.semCorpo) continue; // quem pede pra ficar como está (ex.: a Emparedada, translúcida, em lendas.js)
     const e = g.matrixWorld.elements, d = Math.hypot(e[12] - camera.position.x, e[13] - camera.position.y, e[14] - camera.position.z);
     const lim = ativos.has(g) ? RAIO_SAI : RAIO;
-    if (d < lim && visivel(g)) perto.push([d, g]);
+    if (d < lim && visivel(g)) { perto.push([d, g]); g.userData.__dCam = d; }
   }
   perto.sort((a, b) => a[0] - b[0]);
   const quer = new Set(perto.slice(0, MAX).map((x) => x[1]));
@@ -329,6 +358,16 @@ export function atualizarGente(camera) {
   let novos = 0;
   for (const g of quer) if (!ativos.has(g) && novos < 2) { if (prender(g)) novos++; }
   for (const [g, I] of ativos) posar(g, I, dt);
+  // as malhas com esqueleto não sabem se recortar pela câmera (frustumCulled desligado, a caixa delas não segue os
+  // ossos): o corpo todo some quando a esfera da pessoa (folgada, para a sombra que cai na tela) está fora da vista;
+  // de longe (mais de 20 m) a sombra é só um borrão e o corpo deixa de projetar
+  _fr.setFromProjectionMatrix(_pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse));
+  for (const [g, I] of ativos) {
+    const e = g.matrixWorld.elements; _esf.center.set(e[12], e[13] + 0.9, e[14]);
+    I.raiz.visible = _fr.intersectsSphere(_esf);
+    I.corpo.castShadow = I.roupaM.castShadow = (g.userData.__dCam ?? 0) < 20; // a roupa tapa o buraco do corpo na sombra
+  }
+  atualizarGente.ms = (atualizarGente.ms || 0) * 0.95 + (performance.now() - t0) * 0.05; // custo médio por quadro (CPU)
   if (typeof window !== 'undefined' && quadro % 30 === 0 && window.__corposDebug) window.__corposDebug = [...ativos].map(([g, I]) => ({ cam: g.userData.look.camisa, porte: I.porte, hatY: I.acess[0] ? new THREE.Box3().setFromObject(I.acess[0]).getCenter(new THREE.Vector3()).toArray().map((v) => Math.round(v * 100) / 100) : null, headP: new THREE.Vector3().setFromMatrixPosition(I.bones.Head.matrixWorld).toArray().map((v) => Math.round(v * 100) / 100), headY: Math.round(new THREE.Vector3().setFromMatrixPosition(I.bones.Head.matrixWorld).y * 100) / 100, hatVis: I.acess[0] ? (() => { let v = true; I.acess[0].traverseAncestors((a) => { if (!a.visible) v = false; }); return v; })() : null, nUp: g.userData.upper?.children.length, acess: I.acess.length, orig: (I.acessOrig || []).map((o) => o.visible), look: g.userData.look, cores: I.roupa.userData.cores.value.map((v) => v.toArray().map((x) => Math.round(x * 100) / 100)) }));
-  if (typeof window !== 'undefined' && quadro % 30 === 0) window.genteReal = { ativos: ativos.size, andando: [...ativos.values()].filter((I) => I.andando).length, criados, pessoas: PESSOAS.size, onde: [...ativos].sort((a, b) => b[1].andando - a[1].andando).slice(0, 4).map(([g, I]) => [g.matrixWorld.elements[12], g.matrixWorld.elements[13], g.matrixWorld.elements[14], (g.userData.look.fem ? 'f' : 'm') + (I.andando ? ':anda' : '')].map((v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : v))) };
+  if (typeof window !== 'undefined' && quadro % 30 === 0) window.genteReal = { ms: Math.round(atualizarGente.ms * 100) / 100, ativos: ativos.size, andando: [...ativos.values()].filter((I) => I.andando).length, criados, pessoas: PESSOAS.size, onde: [...ativos].sort((a, b) => b[1].andando - a[1].andando).slice(0, 4).map(([g, I]) => [g.matrixWorld.elements[12], g.matrixWorld.elements[13], g.matrixWorld.elements[14], (g.userData.look.fem ? 'f' : 'm') + (I.andando ? ':anda' : '')].map((v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : v))) };
 }
