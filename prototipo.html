@@ -9,16 +9,20 @@
   canvas { display: block; }
   #ui { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 32px); }
   #ui button { border: 0; border-radius: 999px; padding: 9px 15px; font: 700 14px Inter, system-ui, sans-serif; background: #2b1d3a; color: #fff; cursor: pointer; }
-  #ui button.on { background: linear-gradient(100deg, #8338ec, #e8343f); }
+  #av { position: fixed; left: 50%; top: 16px; transform: translateX(-50%); display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: calc(100% - 420px); }
+  #av button { border: 0; border-radius: 999px; padding: 6px 11px; font: 700 12px Inter, system-ui, sans-serif; background: rgba(20, 16, 30, .72); color: #fff; cursor: pointer; }
+  #av button.on, #ui button.on { background: linear-gradient(100deg, #8338ec, #e8343f); }
   .rotulo { position: fixed; top: 16px; padding: 6px 12px; border-radius: 10px; background: rgba(20, 16, 30, .72); color: #fff; font: 700 14px Inter, system-ui, sans-serif; }
   #r1 { left: 16px; } #r2 { right: 16px; }
-  #info { position: fixed; top: 52px; right: 16px; color: #1d1d1f; font: 12px Inter, system-ui, sans-serif; background: rgba(255,255,255,.75); padding: 6px 10px; border-radius: 8px; max-width: 46vw; }
+  #info { position: fixed; top: 84px; right: 16px; color: #1d1d1f; font: 12px Inter, system-ui, sans-serif; background: rgba(255,255,255,.75); padding: 6px 10px; border-radius: 8px; max-width: 46vw; }
+  @media (max-width: 760px) { #av { top: 92px; max-width: calc(100% - 32px); } #info { top: 52px; left: 16px; right: auto; max-width: calc(100% - 32px); } #r2 { display: none; } }
 </style>
 </head>
 <body>
 <div class="rotulo" id="r1">Hoje (boneco de caixas)</div>
 <div class="rotulo" id="r2">Protótipo (corpo com esqueleto)</div>
 <div id="info"></div>
+<div id="av"></div>
 <div id="ui"></div>
 <script type="module" src="/src/prototipo.js"></script>
 </body>

@@ -222,3 +222,27 @@ body.touch #roteiro { top: 66px; width: 210px; font-size: 12px; }
   .av-card b { display: none; }
   #escolha { margin-top: 10px; }
 }
+
+/* partida de dominó na praça (src/dominojogo.js) */
+#domino { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; background: rgba(10, 8, 16, .55); padding: 16px; }
+#domino.hidden { display: none; }
+.dm-cx { width: min(760px, 100%); max-height: 100%; overflow: auto; background: radial-gradient(circle at 50% 30%, #2f6b3a, #1d4626); border: 6px solid #7a5a3a; border-radius: 20px; padding: 14px 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, .5); color: #fff; }
+.dm-top { display: flex; justify-content: space-between; align-items: center; font-size: 15px; }
+.dm-x, .dm-fim button, .dm-lados button { border: 0; border-radius: 999px; padding: 7px 14px; font: 700 13px Inter, sans-serif; cursor: pointer; background: #ffd166; color: #2a1a10; }
+.dm-x { background: rgba(255, 255, 255, .14); color: #fff; }
+.dm-ops { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
+.dm-op { flex: 1; min-width: 150px; background: rgba(0, 0, 0, .22); border-radius: 10px; padding: 6px 10px; font-size: 13px; border: 2px solid transparent; }
+.dm-op.vez { border-color: #ffd166; }
+.dm-op i { color: #9fe6a8; font-style: normal; font-size: 11px; }
+.dm-op span { display: block; letter-spacing: 2px; color: #f4f1ea; }
+.dm-mesa { min-height: 60px; display: flex; flex-wrap: wrap; gap: 3px; align-items: center; justify-content: center; padding: 10px; background: rgba(0, 0, 0, .18); border-radius: 12px; }
+.dm-mesa em { color: #cfe8d2; font-size: 13px; }
+.dm-log { text-align: center; margin: 10px 0 6px; min-height: 1.3em; font-weight: 600; color: #ffe8a8; }
+.dm-lados, .dm-fim { display: flex; gap: 10px; justify-content: center; align-items: center; margin: 6px 0; flex-wrap: wrap; }
+.dm-fim b { font-size: 18px; }
+.dm-mao { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; padding: 10px; border-radius: 12px; border: 2px dashed transparent; }
+.dm-mao.vez { border-color: rgba(255, 209, 102, .6); }
+.dm-p { background: none; border: 2px solid transparent; border-radius: 9px; padding: 2px; cursor: default; opacity: .45; }
+.dm-p.ok { opacity: 1; cursor: pointer; }
+.dm-p.ok:hover, .dm-p.sel { border-color: #ffd166; transform: translateY(-3px); }
+@media (max-width: 600px) { .dm-mesa svg { width: 34px; height: 17px; } .dm-p svg { width: 48px; height: 24px; } .dm-op { min-width: 0; } }

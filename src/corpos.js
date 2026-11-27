@@ -10,7 +10,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneSkel } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import { acessorios, tintaPele } from './protagonista.js';
+import { acessorios, tintaPele, jogadorMesh } from './protagonista.js';
 // peças penduradas no tronco e na cabeça: se o número muda (um módulo pôs chapéu, véu...), recopia os acessórios
 const nPecas = (u) => (u.upper?.children.length || 0) + (u.head?.children.length || 0) * 1000;
 
@@ -220,7 +220,7 @@ function novoCorpo(M) {
   });
   I.ossoRest = M.ossoRest; I.cabeca = M.cabeca;
   I.mixer = new THREE.AnimationMixer(raiz); I.acoes = {};
-  for (const n of ['Idle_Loop', 'Walk_Loop', 'Jog_Fwd_Loop']) if (modelos.clips[n]) { const a = I.mixer.clipAction(modelos.clips[n]); a.play(); a.setEffectiveWeight(0); a.time = Math.random() * a.getClip().duration; I.acoes[n] = a; }
+  for (const n of ['Idle_Loop', 'Idle_Talking_Loop', 'Walk_Loop', 'Jog_Fwd_Loop']) if (modelos.clips[n]) { const a = I.mixer.clipAction(modelos.clips[n]); a.play(); a.setEffectiveWeight(0); a.time = Math.random() * a.getClip().duration; I.acoes[n] = a; }
   return I;
 }
 
@@ -247,6 +247,8 @@ function vestir(I, look, g) {
   // tronco um pouco mais estreito). Idoso fica médio
   const h = ((g.id * 2654435761) >>> 0) % 100, fem = I.k === 'f';
   I.porte = look.tipo === 'idoso' ? 0.88 : h < (fem ? 50 : 40) ? 0.8 : h < (fem ? 90 : 80) ? 0.88 : 1;
+  // parado, um terço do povo fica de conversa (gesticula) em vez de só esperar
+  I.parado = ((g.id * 40503) >>> 0) % 100 < 35 && I.acoes.Idle_Talking_Loop ? 'Idle_Talking_Loop' : 'Idle_Loop';
   const e = I.M.escala, t = 0.86 + 0.14 * I.porte;
   I.raiz.scale.set(e * t, e, e * t);
   // cabelo
@@ -277,7 +279,7 @@ function prender(g) {
   const look = g.userData.look, k = look.fem ? 'f' : 'm';
   let I = livres[k].pop();
   if (!I) { if (criados >= MAX + 4) return false; I = novoCorpo(modelos[k]); criados++; }
-  vestir(I, look, g);
+  vestir(I, look, g); I.yaw = I.pitch = 0;
   g.add(I.raiz); I.dono = g; I.raiz.visible = true;
   for (const m of g.userData.caixas || []) m.visible = false;
   acessorios(I, g); I.nUpper = nPecas(g.userData);
@@ -299,12 +301,17 @@ function posar(g, I, dt) {
   const u = g.userData, M = I.M;
   // o módulo pendurou ou tirou alguma peça do tronco (chapéu de palha, sombrinha): refaz as cópias nos ossos
   if (u.upper && nPecas(u) !== I.nUpper) { acessorios(I, g); I.nUpper = nPecas(u); }
-  const andando = u.__andarQ === quadro - 1 && !u.seated && I.mixer;
+  // em pé e quieto (tronco e pernas do boneco sem giro há meio segundo): também usa a animação de verdade (espera ou
+  // conversa), e só os braços que o módulo mexeu continuam copiados. Antes, quem só esperava parecia manequim
+  const zero = (j) => !j || Math.abs(j.rotation.x) + Math.abs(j.rotation.y) + Math.abs(j.rotation.z) < 1e-3;
+  const marcado = u.__andarQ === quadro - 1;
+  u.__quieto = !marcado && !u.seated && zero(u.upper) && zero(u.legL) && zero(u.legR) && zero(u.kneeL) && zero(u.kneeR) ? (u.__quieto || 0) + dt : 0;
+  const andando = (marcado || u.__quieto > 0.5) && !u.seated && I.mixer;
   g.getWorldQuaternion(_gq);
   let mapa = M.MAPA;
   if (andando) {
     // animação de verdade: parado, andar ou trote pela velocidade, com troca suave
-    const v = u.__vel || 0, alvo = v < 0.3 ? 'Idle_Loop' : v < 4.8 ? 'Walk_Loop' : 'Jog_Fwd_Loop';
+    const v = marcado ? u.__vel || 0 : 0, alvo = v < 0.3 ? I.parado || 'Idle_Loop' : v < 4.8 ? 'Walk_Loop' : 'Jog_Fwd_Loop';
     for (const [n, a] of Object.entries(I.acoes)) {
       const w = a.getEffectiveWeight(), t = n === alvo ? 1 : 0;
       a.setEffectiveWeight(w + (t - w) * Math.min(1, dt * 8));
@@ -314,12 +321,16 @@ function posar(g, I, dt) {
     aplicarPorte(I);
     I.raiz.updateMatrixWorld(true);
     // braços mexidos pelo módulo depois do passo: continuam copiados do boneco
-    const mexL = Math.abs(u.armL.rotation.x - u.__aL) > 1e-3 || Math.abs(u.elbowL.rotation.x - u.__eL) > 1e-3 || Math.abs(u.armL.rotation.z + 0.07) > 0.03 || u.armL.rotation.y !== 0;
-    const mexR = Math.abs(u.armR.rotation.x - u.__aR) > 1e-3 || Math.abs(u.elbowR.rotation.x - u.__eR) > 1e-3 || Math.abs(u.armR.rotation.z - 0.07) > 0.03 || u.armR.rotation.y !== 0;
-    mapa = M.MAPA.filter(([, c]) => (mexL && c.includes('armL')) || (mexR && c.includes('armR')));
+    const aL = marcado ? u.__aL : 0, eL = marcado ? u.__eL : 0, aR = marcado ? u.__aR : 0, eR = marcado ? u.__eR : 0;
+    const mexL = Math.abs(u.armL.rotation.x - aL) > 1e-3 || Math.abs(u.elbowL.rotation.x - eL) > 1e-3 || Math.abs(u.armL.rotation.z + 0.07) > 0.03 || u.armL.rotation.y !== 0;
+    const mexR = Math.abs(u.armR.rotation.x - aR) > 1e-3 || Math.abs(u.elbowR.rotation.x - eR) > 1e-3 || Math.abs(u.armR.rotation.z - 0.07) > 0.03 || u.armR.rotation.y !== 0;
+    const mexH = !marcado && !zero(u.head); // cabeça virada pelo módulo (olhando algo)
+    mapa = M.MAPA.filter(([o, c]) => (mexL && c.includes('armL')) || (mexR && c.includes('armR')) || (mexH && o === 'Head'));
     I.andando = true;
+    I.podeOlhar = v < 0.3 && (!mexH || Math.abs(u.head.rotation.y) < 0.3); // cabeça bem virada pelo módulo: deixa
   } else {
     if (I.andando) { for (const a of Object.values(I.acoes)) a.setEffectiveWeight(0); I.andando = false; }
+    I.podeOlhar = false;
     for (const [n, b] of Object.entries(I.bones)) { const r = M.refLocal[n]; if (r) b.quaternion.copy(r); }
     aplicarPorte(I);
     I.raiz.updateMatrixWorld(true);
@@ -332,6 +343,32 @@ function posar(g, I, dt) {
     b.quaternion.copy(_pq.invert().multiply(_w));
     b.updateMatrixWorld(true);
   }
+  olhar(g, I, dt);
+}
+
+// quem está parado e com a cabeça livre olha o jogador que passa perto (até 5 m, na frente dele): vira a cabeça
+// devagar, até ~60° para o lado e um pouco para cima ou para baixo, e volta quando ele se afasta
+const _j = new THREE.Vector3(), _e = new THREE.Euler(0, 0, 0, 'YXZ'), _o = new THREE.Quaternion(), _hq = new THREE.Quaternion();
+function olhar(g, I, dt) {
+  let ty = 0, tp = 0;
+  const J = jogadorMesh();
+  if (I.podeOlhar && J?.parent && visivel(J)) {
+    J.getWorldPosition(_j); _j.y += 1.55;
+    g.worldToLocal(_j); _j.y -= 1.55;
+    const hz = Math.hypot(_j.x, _j.z), yaw = Math.atan2(_j.x, _j.z);
+    if (hz > 0.4 && hz < 5 && Math.abs(yaw) < 1.9) { ty = Math.max(-1.05, Math.min(1.05, yaw)); tp = Math.max(-0.35, Math.min(0.35, -Math.atan2(_j.y, hz))); }
+  }
+  const k = Math.min(1, dt * 3.5);
+  I.yaw = (I.yaw || 0) + (ty - (I.yaw || 0)) * k; I.pitch = (I.pitch || 0) + (tp - (I.pitch || 0)) * k;
+  if (Math.abs(I.yaw) + Math.abs(I.pitch) < 1e-3) return;
+  const h = I.bones.Head; if (!h) return;
+  // giro no espaço da pessoa, levado para o mundo e aplicado por cima da cabeça
+  g.getWorldQuaternion(_gq);
+  _o.setFromEuler(_e.set(I.pitch, I.yaw, 0)); _o.premultiply(_gq).multiply(_pq.copy(_gq).invert());
+  h.getWorldQuaternion(_hq); _hq.premultiply(_o);
+  h.parent.getWorldQuaternion(_pq);
+  h.quaternion.copy(_pq.invert().multiply(_hq));
+  h.updateMatrixWorld(true);
 }
 
 const _p = new THREE.Vector3();
@@ -369,5 +406,5 @@ export function atualizarGente(camera) {
   }
   atualizarGente.ms = (atualizarGente.ms || 0) * 0.95 + (performance.now() - t0) * 0.05; // custo médio por quadro (CPU)
   if (typeof window !== 'undefined' && quadro % 30 === 0 && window.__corposDebug) window.__corposDebug = [...ativos].map(([g, I]) => ({ cam: g.userData.look.camisa, porte: I.porte, hatY: I.acess[0] ? new THREE.Box3().setFromObject(I.acess[0]).getCenter(new THREE.Vector3()).toArray().map((v) => Math.round(v * 100) / 100) : null, headP: new THREE.Vector3().setFromMatrixPosition(I.bones.Head.matrixWorld).toArray().map((v) => Math.round(v * 100) / 100), headY: Math.round(new THREE.Vector3().setFromMatrixPosition(I.bones.Head.matrixWorld).y * 100) / 100, hatVis: I.acess[0] ? (() => { let v = true; I.acess[0].traverseAncestors((a) => { if (!a.visible) v = false; }); return v; })() : null, nUp: g.userData.upper?.children.length, acess: I.acess.length, orig: (I.acessOrig || []).map((o) => o.visible), look: g.userData.look, cores: I.roupa.userData.cores.value.map((v) => v.toArray().map((x) => Math.round(x * 100) / 100)) }));
-  if (typeof window !== 'undefined' && quadro % 30 === 0) window.genteReal = { ms: Math.round(atualizarGente.ms * 100) / 100, ativos: ativos.size, andando: [...ativos.values()].filter((I) => I.andando).length, criados, pessoas: PESSOAS.size, onde: [...ativos].sort((a, b) => b[1].andando - a[1].andando).slice(0, 4).map(([g, I]) => [g.matrixWorld.elements[12], g.matrixWorld.elements[13], g.matrixWorld.elements[14], (g.userData.look.fem ? 'f' : 'm') + (I.andando ? ':anda' : '')].map((v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : v))) };
+  if (typeof window !== 'undefined' && quadro % 30 === 0) window.genteReal = { ms: Math.round(atualizarGente.ms * 100) / 100, ativos: ativos.size, andando: [...ativos.values()].filter((I) => I.andando).length, conversando: [...ativos.values()].filter((I) => I.andando && I.acoes.Idle_Talking_Loop?.getEffectiveWeight() > 0.5).length, olhando: [...ativos.values()].filter((I) => Math.abs(I.yaw || 0) > 0.15).length, criados, pessoas: PESSOAS.size, onde: [...ativos].sort((a, b) => b[1].andando - a[1].andando).slice(0, 4).map(([g, I]) => [g.matrixWorld.elements[12], g.matrixWorld.elements[13], g.matrixWorld.elements[14], (g.userData.look.fem ? 'f' : 'm') + (I.andando ? ':anda' : '')].map((v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : v))) };
 }

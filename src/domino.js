@@ -5,6 +5,7 @@
 import * as THREE from 'three';
 import { makePerson } from './models.js';
 import { conta } from './trofeus.js';
+import { JogoDomino } from './dominojogo.js';
 
 const PRACAS = [/^Praça de Casa Forte$/, /^Praça do Derby$/, /^Parque da Jaqueira$/, /^Praça Maciel Pinheiro$/, /^Praça Sérgio Loreto$/, /^Praça Boa Viagem$/, /^Praça do Hipódromo$/, /^Praça do Arsenal/, /^Praça da Independência$/, /^Praça de Afogados$/, /^Praça do Entroncamento$/];
 const JOGO = ['Passo.', 'Toma essa!', 'Tá trancado, visse?', 'Joga, homi, que tá demorando!', 'Essa eu sabia...', 'Quem tem o seis?'];
@@ -23,7 +24,17 @@ export class Domino {
       const p = world.pois.find((q) => re.test(q.name));
       if (p) this.mesas.push({ x: p.x, z: p.z, nome: p.name, g: null, local: null });
     }
+    this.jogo = new JogoDomino({ hud });
   }
+
+  // a pé, do lado de uma mesa montada: B senta e joga uma partida de dupla (src/dominojogo.js)
+  get mesaPerto() {
+    if (this.player.vehicle) return null; const P = this.player.pos;
+    return this.mesas.find((M) => M.g && Math.hypot(M.local[0] - P.x, M.local[1] - P.z) < 3.2) || null;
+  }
+  get perto() { return !!this.mesaPerto && !this.jogo.aberto; }
+  get hint() { return this.perto ? 'B — sentar e jogar uma partida de dominó com os senhores' : ''; }
+  b() { const M = this.mesaPerto; if (!M || this.jogo.aberto) return false; this.jogo.abre(M.nome); return true; }
 
   update(dt, t, cam) {
     const P = this.player;

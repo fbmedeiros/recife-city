@@ -63,6 +63,7 @@ import { Barbearia } from './barbearia.js';
 import { Corrida } from './corrida.js';
 import { Quadrilha } from './quadrilha.js';
 import { Picole } from './picole.js';
+import { Galao } from './galao.js';
 import { Natal } from './natal.js';
 import { Avatar, avatarAtual } from './avatar.js';
 import { Lendas } from './lendas.js';
@@ -482,6 +483,7 @@ const lendas = new Lendas({ scene, world, hud, player, praia, corrida, sharks })
 phone.lendas = lendas;
 lendas.onChange = () => phone.render();
 const picole = new Picole({ scene, world, hud, player, praia, corrida, sharks }); agenda.m.picole = picole;
+const galao = new Galao({ scene, world, hud, player, traffic, gps }); agenda.m.galao = galao;
 const natal = new Natal({ scene, world, hud, player }); agenda.m.natal = natal;
 agenda.onRoute = () => { if (phone.open) togglePhone(); };
 // jangadas navegando no mar de Boa Viagem
@@ -578,7 +580,7 @@ addEventListener('keydown', (e) => {
   if (e.code === 'KeyR' && started && !e.shiftKey) radio();
   if (e.code === 'KeyU' && started) toggleMute();
   if (e.code === 'KeyK' && started) fotoPedida = true; // modo foto: salva a cena sem HUD
-  if (e.code === 'KeyB' && started) { if (player.vehicle) { if (!voltaPontes.comeca() && !ambulantes.comprar()) malabarista.moeda(); } else if (!natal.b() && !quadrilha.b() && !corrida.b() && !barbearia.corta() && !catamara.b() && !passageiro.b() && !bicicletas.aluga() && !mirantes.b() && !pescaria.b() && !artistas.moeda() && !praia.comprar() && !picole.b() && !feira.comprar()) caranguejos.comprar(); }
+  if (e.code === 'KeyB' && started) { if (player.vehicle) { if (!voltaPontes.comeca() && !ambulantes.comprar()) malabarista.moeda(); } else if (!natal.b() && !quadrilha.b() && !corrida.b() && !barbearia.corta() && !catamara.b() && !passageiro.b() && !bicicletas.aluga() && !mirantes.b() && !pescaria.b() && !artistas.moeda() && !praia.comprar() && !picole.b() && !galao.b() && !domino.b() && !feira.comprar()) caranguejos.comprar(); }
 });
 function togglePhone() {
   if (hud.mapOpen) toggleMap();
@@ -598,7 +600,7 @@ const touch = isTouch ? new Touch({
   keys,
   onTap: (a) => {
     if (!started) return;
-    if (a === 'act') { if (player.vehicle && voltaPontes.hint && voltaPontes.comeca()) return; if (player.vehicle && ambulantes.hint && ambulantes.comprar()) return; if (player.vehicle && malabarista.hint && malabarista.moeda()) return; if (!player.vehicle && natal.perto && natal.b()) return; if (!player.vehicle && (quadrilha.perto || quadrilha.dancando) && quadrilha.b()) return; if (!player.vehicle && corrida.perto && corrida.b()) return; if (!player.vehicle && barbearia.hint && barbearia.corta()) return; if (!player.vehicle && catamara.hint && catamara.b()) return; if (!player.vehicle && bicicletas.hint && bicicletas.aluga()) return; if (!player.vehicle && passageiro.hint && passageiro.b()) return; if (!player.vehicle && mirantes.hint && mirantes.b()) return; if (!player.vehicle && pescaria.hint && pescaria.b()) return; if (!player.vehicle && artistas.hint && artistas.moeda()) return; if (!player.vehicle && praia.hint && praia.comprar()) return; if (!player.vehicle && picole.hint && picole.b()) return; if (!player.vehicle && feira.hint && feira.comprar()) return; if (!player.vehicle && caranguejos.hint && caranguejos.comprar()) return; if (boardBoat()) return; if (!player.vehicle && !traffic.nearestCar(player.pos.x, player.pos.z, 4.5) && (player.dancing || nearRoda())) toggleDance(); else enterOrExit(); }
+    if (a === 'act') { if (player.vehicle && voltaPontes.hint && voltaPontes.comeca()) return; if (player.vehicle && ambulantes.hint && ambulantes.comprar()) return; if (player.vehicle && malabarista.hint && malabarista.moeda()) return; if (!player.vehicle && natal.perto && natal.b()) return; if (!player.vehicle && (quadrilha.perto || quadrilha.dancando) && quadrilha.b()) return; if (!player.vehicle && corrida.perto && corrida.b()) return; if (!player.vehicle && barbearia.hint && barbearia.corta()) return; if (!player.vehicle && catamara.hint && catamara.b()) return; if (!player.vehicle && bicicletas.hint && bicicletas.aluga()) return; if (!player.vehicle && passageiro.hint && passageiro.b()) return; if (!player.vehicle && mirantes.hint && mirantes.b()) return; if (!player.vehicle && pescaria.hint && pescaria.b()) return; if (!player.vehicle && artistas.hint && artistas.moeda()) return; if (!player.vehicle && praia.hint && praia.comprar()) return; if (!player.vehicle && picole.hint && picole.b()) return; if (!player.vehicle && galao.hint && galao.b()) return; if (!player.vehicle && domino.hint && domino.b()) return; if (!player.vehicle && feira.hint && feira.comprar()) return; if (!player.vehicle && caranguejos.hint && caranguejos.comprar()) return; if (boardBoat()) return; if (!player.vehicle && !traffic.nearestCar(player.pos.x, player.pos.z, 4.5) && (player.dancing || nearRoda())) toggleDance(); else enterOrExit(); }
     else if (a === 'jump') jump();
     else if (a === 'dance') toggleDance();
     else if (a === 'horn') audio.horn(1);
@@ -755,9 +757,9 @@ function updateOnFoot(dt) {
     player.vy -= 15 * dt; player.yOff += player.vy * dt;
     if (player.yOff <= 0) { player.yOff = 0; player.vy = 0; }
   }
-  const run = keys.ShiftLeft || keys.ShiftRight;
+  const run = (keys.ShiftLeft || keys.ShiftRight) && !galao.carregando;
   const swim = sharks.swimming;
-  const speed = (f || s) ? (swim ? 2.2 : run ? 8 : 4.2 * Math.max(0.45, mag)) : 0;
+  const speed = (f || s) ? (swim ? 2.2 : run ? 8 : 4.2 * Math.max(0.45, mag) * (galao.carregando ? 0.62 : 1)) : 0;
   player.speed = speed;
   const nx = player.pos.x + mx * speed * dt, nz = player.pos.z + mz * speed * dt;
   // se um carro parou em cima de você, dá pra sair; senão carro bloqueia como parede
@@ -807,8 +809,8 @@ function updateOnFoot(dt) {
   const steal = car && traffic.cars.includes(car);
   const roda = !car && nearRoda();
   const boat = !car && world.rio?.boardable(player.pos.x, player.pos.z);
-  if (touch) { touch.setMode(false, natal.perto ? 'foto' : quadrilha.perto ? 'dançar' : corrida.perto ? 'correr' : barbearia.hint ? 'cortar' : catamara.hint ? (catamara.ativo ? 'voltar' : 'embarcar') : bicicletas.hint ? 'alugar' : passageiro.hint ? (passageiro.dentro ? 'descer' : passageiro.espera ? 'desistir' : 'esperar') : mirantes.hint ? (mirantes.ativo ? 'descer' : 'subir') : pescaria.hint ? (pescaria.estado ? 'puxar' : 'pescar') : artistas.hint ? 'moeda' : praia.hint ? 'comprar' : picole.hint ? (picole.vendendo ? (picole.freguesPerto() ? 'vender' : 'gritar') : 'pegar') :  feira.hint || caranguejos.hint ? 'comprar' : boat ? 'barco' : car ? (steal ? 'roubar' : 'entrar') : roda ? (player.dancing ? 'parar' : 'dançar') : null); hud.hint(''); }
-  else hud.hint(boat ? `F — atravessar de barco pro ${boat.state === 'A' ? 'Parque das Esculturas' : 'Marco Zero'} (R$ 5)` : car ? (steal ? 'F — roubar o carro' : 'F — entrar no carro') : roda ? (player.dancing ? 'G — sair da roda' : 'G — entrar na roda de passinho') : player.dancing ? 'G — parar de dançar' : natal.hint || quadrilha.hint || corrida.hint || barbearia.hint || catamara.hint || bicicletas.hint || passageiro.hint || mirantes.hint || pescaria.hint || artistas.hint || praia.hint || picole.hint || feira.hint || caranguejos.hint);
+  if (touch) { touch.setMode(false, natal.perto ? 'foto' : quadrilha.perto ? 'dançar' : corrida.perto ? 'correr' : barbearia.hint ? 'cortar' : catamara.hint ? (catamara.ativo ? 'voltar' : 'embarcar') : bicicletas.hint ? 'alugar' : passageiro.hint ? (passageiro.dentro ? 'descer' : passageiro.espera ? 'desistir' : 'esperar') : mirantes.hint ? (mirantes.ativo ? 'descer' : 'subir') : pescaria.hint ? (pescaria.estado ? 'puxar' : 'pescar') : artistas.hint ? 'moeda' : praia.hint ? 'comprar' : picole.hint ? (picole.vendendo ? (picole.freguesPerto() ? 'vender' : 'gritar') : 'pegar') : galao.hint ? (galao.carregando ? 'entregar' : 'pegar') : domino.hint ? 'jogar' : feira.hint || caranguejos.hint ? 'comprar' : boat ? 'barco' : car ? (steal ? 'roubar' : 'entrar') : roda ? (player.dancing ? 'parar' : 'dançar') : null); hud.hint(''); }
+  else hud.hint(boat ? `F — atravessar de barco pro ${boat.state === 'A' ? 'Parque das Esculturas' : 'Marco Zero'} (R$ 5)` : car ? (steal ? 'F — roubar o carro' : 'F — entrar no carro') : roda ? (player.dancing ? 'G — sair da roda' : 'G — entrar na roda de passinho') : player.dancing ? 'G — parar de dançar' : natal.hint || quadrilha.hint || corrida.hint || barbearia.hint || catamara.hint || bicicletas.hint || passageiro.hint || mirantes.hint || pescaria.hint || artistas.hint || praia.hint || picole.hint || galao.hint || domino.hint || feira.hint || caranguejos.hint);
 }
 
 function updateDriving(dt) {
@@ -998,6 +1000,7 @@ function frame() {
   if (started) corrida.update(dt, t, camera.position);
   if (started) quadrilha.update(dt, t, camera.position);
   if (started) picole.update(dt, t, camera.position);
+  if (started) galao.update(dt, t, camera.position);
   if (started) natal.update(dt, t, camera.position);
   if (started) lendas.update(dt, t, camera.position);
   if (started) malabarista.update(dt, t);
@@ -1036,7 +1039,7 @@ function frame() {
 frame();
 
 // para depuração no console
-window.game = { avatar, natal, picole, lendas, quadrilha, corrida, barbearia, casamento, lixo, desafios, agenda, catamara, bicicletas, malabarista, praiaJogos, carroDeSom, passageiro, forro, mirantes, artistas, voltaPontes, pescaria, pipas, domino, capoeira, gps, album, weather, bloco, ambience, ambulantes, boletim, jogo, praia, roteiro, zap, ambulancia, blitz, pombos, sinos, feira, negocios, caranguejos, jangadas, avioes, audio, sharks, caramelos,
+window.game = { avatar, galao, natal, picole, lendas, quadrilha, corrida, barbearia, casamento, lixo, desafios, agenda, catamara, bicicletas, malabarista, praiaJogos, carroDeSom, passageiro, forro, mirantes, artistas, voltaPontes, pescaria, pipas, domino, capoeira, gps, album, weather, bloco, ambience, ambulantes, boletim, jogo, praia, roteiro, zap, ambulancia, blitz, pombos, sinos, feira, negocios, caranguejos, jangadas, avioes, audio, sharks, caramelos,
   player, traffic, police, missions, world, day, composer, save, shop, phone, camera, scene, renderer, keys, teleport, enterOrExit, touch, trees,
   // depuração: avança n quadros na mão (o navegador pausa o loop quando a janela fica escondida)
   tick(n = 1) { frame.manual = true; for (let i = 0; i < n; i++) frame(); frame.manual = false; },

@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { makePerson, animatePerson } from './models.js';
 import { carregarCorpo } from './protagonista.js';
+import { AVATARES } from './avatar.js';
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(2, devicePixelRatio));
@@ -37,30 +38,47 @@ const meioFio = new THREE.Mesh(new THREE.BoxGeometry(60, 0.15, 0.25), new THREE.
 meioFio.position.set(0, 0.075, -1.9); meioFio.castShadow = meioFio.receiveShadow = true; scene.add(meioFio);
 
 // ---------------------------------------------------------------- boneco de hoje
-const velho = makePerson({ player: true, hair: 'short' });
-velho.position.set(-0.9, 0, 0);
-velho.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-scene.add(velho);
+let velho = null;
+function montarVelho(A) {
+  if (velho) scene.remove(velho);
+  velho = makePerson({ player: true, tipo: A.sexo === 'f' ? 'mulher' : 'homem', sexo: A.sexo, barba: A.barba, shirt: A.shirt, top: 'regata', pants: A.pants, bottom: 'bermuda', shoes: A.shoes, skin: A.pele, hair: A.hair, hairColor: A.hairColor });
+  velho.position.set(-0.9, 0, 0);
+  velho.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  scene.add(velho);
+}
 
 // ---------------------------------------------------------------- corpo novo (o mesmo do jogo: protagonista.js)
 const info = document.getElementById('info');
-let mixer = null, acoes = {}, atual = null;
-async function montar() {
-  const c = await carregarCorpo();
-  c.raiz.position.set(0.9, 0, 0); scene.add(c.raiz);
-  mixer = c.mixer; acoes = c.acoes;
-  info.textContent = `${Math.round(c.tri / 1000)} mil triângulos · ${c.ossos} ossos · ${Object.keys(acoes).length} animações`;
-  window.prototipo = { tri: c.tri, ossos: c.ossos, anims: Object.keys(acoes) };
-  tocar('parado');
+let mixer = null, acoes = {}, atual = null, novo = null, modo = 'parado', pedido = 0;
+// os seis personagens da tela de início (avatar.js): troca os dois bonecos lado a lado
+async function montar(A = AVATARES[0]) {
+  const n = ++pedido;
+  for (const b of av.children) b.classList.toggle('on', b.dataset.id === A.id);
+  montarVelho(A);
+  const c = await carregarCorpo({ sexo: A.sexo, pele: A.pele, barba: A.barba, corte: A.hair, cabelo: A.hairColor, regata: A.shirt, bermuda: A.pants, tenis: A.shoes });
+  if (n !== pedido) return; // trocou de novo antes de carregar
+  if (novo) scene.remove(novo);
+  novo = c.raiz; c.raiz.position.set(0.9, 0, 0); scene.add(c.raiz);
+  mixer = c.mixer; acoes = c.acoes; atual = null;
+  info.textContent = `${A.nome} · ${Math.round(c.tri / 1000)} mil triângulos · ${c.ossos} ossos · ${Object.keys(acoes).length} animações`;
+  window.prototipo = { avatar: A.id, tri: c.tri, ossos: c.ossos, anims: Object.keys(acoes) };
+  tocar(modo);
 }
+const av = document.getElementById('av');
+for (const A of AVATARES) {
+  const b = document.createElement('button'); b.textContent = A.nome; b.dataset.id = A.id;
+  b.onclick = () => montar(A).catch((e) => { info.textContent = 'erro: ' + e.message; console.error(e); });
+  av.appendChild(b);
+}
+window.escolhe = (id) => montar(AVATARES.find((a) => a.id === id));
 
 const MODOS = { parado: ['Idle_Loop', 0], andando: ['Walk_Loop', 1.4], correndo: ['Jog_Fwd_Loop', 4.2], pique: ['Sprint_Loop', 8], conversando: ['Idle_Talking_Loop', 0], dancando: ['Dance_Loop', 0], sentado: ['Sitting_Idle_Loop', 0] };
 let vel = 0;
-function tocar(modo) {
-  const [nome, v] = MODOS[modo]; vel = v;
+function tocar(m) {
+  modo = m; const [nome, v] = MODOS[m]; vel = v;
   const a = acoes[nome]; if (!a) return;
   a.reset().fadeIn(0.25).play(); if (atual && atual !== a) atual.fadeOut(0.25); atual = a;
-  for (const b of ui.children) b.classList.toggle('on', b.dataset.m === modo);
+  for (const b of ui.children) b.classList.toggle('on', b.dataset.m === m);
 }
 const ui = document.getElementById('ui');
 for (const [m, rot] of [['parado', 'Parado'], ['andando', 'Andando'], ['correndo', 'Correndo'], ['pique', 'No pique'], ['conversando', 'Conversando'], ['dancando', 'Dançando'], ['sentado', 'Sentado']]) {
@@ -72,7 +90,7 @@ const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(0.05, clock.getDelta());
   mixer?.update(dt);
-  animatePerson(velho, vel, dt);
+  if (velho) animatePerson(velho, vel, dt);
   controls.update();
   renderer.render(scene, camera);
 });

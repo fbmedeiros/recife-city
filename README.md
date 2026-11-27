@@ -329,6 +329,8 @@ O script abre o jogo num Chrome sem janela (perfil novo, save vazio) e joga um p
 - troca pelos 6 personagens (cartões da tela de início, save e boneco certo) e confere que o corte da barbearia zera;
 - monta o Natal no Marco Zero (e confere que fora da época não monta) e tira foto com o Papai Noel;
 - pega o isopor no quiosque de picolé e vende os 12 picolés pros banhistas da areia;
+- pega um galão no depósito de Casa Amarela, confere que vai pro ombro, chega na freguesa e entrega (com pagamento);
+- senta numa mesa de dominó, joga uma pedra clicando na tela, deixa a partida terminar e levanta da mesa;
 - liga o toró com alagamento;
 - passa pelo álbum, pelas oito abas do celular, pelo bloco de frevo e pelo som ambiente;
 - para num sinal vermelho, espera o ambulante e compra;
@@ -887,6 +889,38 @@ Também conta:
 - desafio do dia "Vende 6 picolés";
 - entrada na agenda do celular ("o dia todo").
 
+## Bico de galão de água em Casa Amarela (`src/galao.js`)
+Na calçada perto do centro de Casa Amarela (sempre no mesmo ponto) fica o **Depósito Água Boa**: balcão, toldo azul, placa "ÁGUA BOA · galão 20 L · entrega", pilha de galões azuis e Seu Didi de boné.
+- **Pegar o galão:** a pé, perto do depósito, **B** pega um galão de 20 L, que vai no ombro. O GPS marca a casa da freguesa, numa calçada a 120–380 m dali.
+- **Peso:** com o galão no ombro você anda a 62% da velocidade e não corre (nem Shift, nem o botão de correr do toque).
+- **Entregar:** a uns 70 m, a freguesa aparece na porta acenando ("Aqui, moço da água!"). Perto dela, **B** entrega por R$ 10, mais até R$ 6 de gorjeta, que diminui com o tempo gasto.
+- **Perder a entrega:** entrar num carro deixa o galão no chão; estourar o tempo (distância ÷ 2,2 m/s + 45 s) faz a freguesa pedir noutro depósito.
+
+O objetivo da tela mostra o nome da freguesa, a distância e o tempo. No toque, o botão de ação vira "pegar" ou "entregar".
+
+Também conta:
+- troféu "Ombro de ferro", por 5 entregas;
+- desafio do dia "Entrega 2 galões";
+- entrada na agenda do celular.
+
+## Partida de dominó na praça (`src/dominojogo.js`)
+Nas mesas de dominó das praças (`src/domino.js`), a pé do lado da mesa, **B** senta pra jogar de dupla: você e Seu Severino (seu parceiro, na sua frente) contra Seu Biu e Seu Tonho.
+
+Regras:
+- 28 pedras, 7 pra cada. Quem tem a carroça de sena (6|6) abre o jogo.
+- Na sua vez, as pedras que servem acendem: toca numa. Se ela servir nas duas pontas, escolhe o lado. Sem pedra que sirva, você passa sozinho.
+- **Bateu** (acabou a mão): a dupla dele ganha. **Trancou** (quatro passes seguidos): ganha a dupla com menos pontos somados na mão; ponto igual é empate.
+- Os senhores jogam a pedra mais pesada que serve e escolhem a ponta que deixa mais pedras deles servindo.
+
+Ganhando, a dupla leva R$ 15; perdendo, você paga o café (R$ 5, perdoado se estiver liso). **Esc** ou "Levantar ✕" sai no meio. A tela é HTML por cima do jogo e funciona no toque (o botão de ação vira "jogar"). Enquanto ela está aberta, as teclas não mexem o personagem.
+
+As regras ficam na classe `Partida`, sem tela, pra dar pra testar sozinha. Em 500 partidas só entre computadores: 248 a 248, 4 empates e 67 trancadas.
+
+Também conta:
+- troféu "Lá-e-lô!", por ganhar uma partida;
+- desafio do dia "Ganha uma partida de dominó";
+- a dica na agenda do dominó agora avisa que dá pra sentar.
+
 ## Sinos das igrejas (`src/sinos.js`, `audio.sino`)
 A cada hora cheia do jogo, a igreja mais perto do jogador (a menos de 450 m) bate o sino uma vez por hora, como relógio de 12 horas (15h dá 3 batidas), uma a cada 1,6 s. As igrejas vêm dos lugares de culto do mapa e dos nomes com igreja, basílica, capela, matriz, convento, concatedral ou paróquia. O sino é sintetizado com parciais de sino (fundamental, terça menor, quinta, oitava e um "hum" grave) que demoram a sumir, com o volume pela distância. Quando o relógio volta das 17h pras 6h, não toca.
 
@@ -1270,13 +1304,15 @@ Fotos do jogo (Chrome sem janela, câmera livre, 11h30) lado a lado com fotos do
 - No passinho, o corpo novo dança uma dança só (`Dance_Loop`). Os passos com nome do passinho continuam só no boneco de caixas.
 - Arquivos: corpo, cabelos e animações da Quaternius, CC0 (Universal Base Characters e Universal Animation Library, versões gratuitas). Ficam em `public/personagens/` (4,4 MB). `animacoes-jogo.glb` traz só as 16 animações que o jogo usa (2,8 MB, contra 7,6 MB do pacote inteiro). As texturas foram reduzidas a 1024 px, e a licença está em `LICENCA-Quaternius-CC0.txt`.
 - A roupa (regata, bermuda e tênis) é recortada do próprio corpo, pelos triângulos cujo osso principal é o do tronco, do quadril/coxa ou do pé. A peça é inflada 1 cm e presa no mesmo esqueleto.
-- `prototipo.html` (com `npm run dev`) mostra o boneco de caixas ao lado do corpo novo, com botões para cada animação.
+- `prototipo.html` (com `npm run dev`) mostra o boneco de caixas ao lado do corpo novo, com botões para cada animação e para os seis personagens da tela de início (`AVATARES` de avatar.js). Trocar de personagem refaz os dois bonecos e mantém a animação; no console, `escolhe('galego')`.
 
 ## NPCs de perto com corpo de verdade (26/11) — `src/corpos.js`
 - Quem está a até ~35 m da câmera, no máximo 16 pessoas, ganha um corpo humano com esqueleto, de um conjunto de corpos reaproveitados. Há modelo masculino e feminino, sai em 42 m, e o jogador e as estátuas ficam de fora. Mais longe continua o boneco de caixas.
 - **Porte:** o corpo do kit é de "super-herói". Cada NPC sorteia magro, médio ou forte (mulher: mais magras; idoso: médio). Braço e coxa ficam mais finos na espessura, com mão e pé no tamanho certo, e o tronco um pouco mais estreito. A escala vai depois da animação a cada quadro, porque os clipes trazem escala em todos os ossos.
 - **Chapéu e peças penduradas depois:** se um módulo pendura ou tira algo do tronco depois que a pessoa ganhou o corpo novo (o chapéu de palha da quadrilha), as cópias nos ossos são refeitas, e o original some (antes ficava em dobro). O chapéu sobe a altura de um cabelo, porque a cabeça de caixa é medida com cabelo e a nova sem. A saia abre mais embaixo, então a coxa dança por dentro sem furar.
 - **Andar de verdade:** quando a pessoa só está andando (`animatePerson` marca isso a cada quadro), o corpo novo usa as animações do kit, com parado, andar e trote pela velocidade e troca suave. Se o módulo mexe nos braços depois do passo (celular, sacola, sombrinha), esses braços continuam copiados do boneco. Dança, capoeira, sentado e outras poses especiais seguem copiadas por inteiro.
+- **Em pé esperando:** quem está parado com tronco e pernas do boneco sem giro há meio segundo (fila, coral, plateia, vendedor) também usa a animação de verdade, em vez de ficar duro feito manequim. Os braços que o módulo pôs (palma, instrumento, celular) e a cabeça virada continuam copiados. Um terço do povo (sorteado pela pessoa) fica de conversa, gesticulando (`Idle_Talking_Loop`), e o resto respira na espera (`Idle_Loop`). No Marco Zero, 14 dos 16 corpos de perto passaram a se mexer; a CPU foi de ~0,9 para ~1,5 ms por quadro. `genteReal.conversando` conta quantos estão de conversa.
+- **Olham pra você:** quem está parado vira a cabeça devagar para o jogador que passa a até 5 m, pela frente (até ~60° para o lado e um pouco para cima ou para baixo), e volta quando ele se afasta. Vale por cima do balanço de cabeça do módulo (o coral continua cantando), mas não quando o módulo já vira bem a cabeça para outro lado. O jogador vem de `jogadorMesh()` (protagonista.js, o último boneco que recebeu `attach`). `genteReal.olhando` conta quantos estão olhando.
 - Os módulos não mudam: cada pessoa continua sendo o boneco de `makePerson`, posado pelas juntas (`userData.legL`, `armR`, `upper`, `head`…) e por `animatePerson`. A cada quadro a pose das juntas é copiada para os ossos: coxa, canela, braço, antebraço, tronco e cabeça, com o lado tirado da posição e a pose de referência do primeiro quadro de "parado". Dança, capoeira, dominó, instrumentos e o resto continuam valendo.
 - Só as peças de caixa criadas por `makePerson` somem (`userData.caixas`). O que os módulos penduram depois (pandeiro, véu, moicano) continua visível, preso na junta de caixa. Boné, óculos e sombrinha da pessoa vão para os ossos, como no protagonista.
 - O visual vem de `userData.look`, gravado em `makePerson`:

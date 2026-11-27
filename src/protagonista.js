@@ -15,6 +15,10 @@ const ALTURA = 1.75;
 const PELE_MEDIA = [0.392, 0.174, 0.080], LUM = (r, g, b) => 0.299 * r + 0.587 * g + 0.114 * b;
 const LUM_MEDIA = LUM(...PELE_MEDIA);
 const _pele = new THREE.Color();
+// o boneco do jogador (o último que recebeu attach): os NPCs de perto viram a cabeça para ele (corpos.js)
+let jogador = null;
+export const jogadorMesh = () => jogador;
+
 export function tintaPele(hex, alvo) {
   _pele.set(hex);
   // expoente 0,8: comprime os extremos (retinto não vira breu e perde o rosto; o claro não estoura)
@@ -174,7 +178,7 @@ export function protagonista() {
   const api = {
     // prende o corpo no boneco (de novo a cada troca de roupa na barbearia/loja)
     attach(mesh, outfit = {}) {
-      host = mesh;
+      host = mesh; jogador = mesh;
       if (desligado) return;
       const novas = { regata: outfit.stripes || outfit.shirt, bermuda: outfit.pants, tenis: outfit.shoes, cabelo: outfit.hairColor, corte: outfit.hair, sexo: outfit.sexo, pele: outfit.skin, barba: !!outfit.barba };
       const mudou = JSON.stringify(novas) !== JSON.stringify(cores);
