@@ -42,6 +42,8 @@ export const TROFEUS = [
   { id: 'coco', k: 'coco', n: 1, nome: 'Embolada', desc: 'Assistiu os emboladores de coco no Mercado de São José.', premio: 15 },
   { id: 'artista5', k: 'artista', n: 5, nome: 'Mecenas da rua', desc: 'Jogou 5 moedas pros artistas de rua.', premio: 15 },
   { id: 'noel', k: 'noel', n: 1, nome: 'Bom Velhinho', desc: 'Tirou foto com o Papai Noel suado do Marco Zero.', premio: 15 },
+  { id: 'repente', k: 'repente', n: 1, nome: 'Cantador de primeira', desc: 'Venceu Mestre Zé Pajeú numa peleja de repente, com 4 versos certos ou mais.', premio: 25 },
+  { id: 'pipa_alto', k: 'pipa_alto', n: 1, nome: 'Pipa no céu', desc: 'Empinou uma pipa emprestada e segurou 20 s acima de 35 m.', premio: 20 },
   { id: 'galao', k: 'galao', n: 5, nome: 'Ombro de ferro', desc: 'Entregou 5 galões de água a pé pelas ruas de Casa Amarela.', premio: 30 },
   { id: 'picole', k: 'picole', n: 1, nome: 'Olha o picolé!', desc: 'Vendeu o isopor inteiro, 12 picolés, na areia de Boa Viagem.', premio: 25 },
   { id: 'corrida_orla', k: 'corrida_orla', n: 1, nome: 'Peito nº 1', desc: 'Completou a Corrida da Orla, 2 km no calçadão de Boa Viagem.', premio: 20 },

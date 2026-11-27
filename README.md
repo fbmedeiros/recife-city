@@ -331,6 +331,8 @@ O script abre o jogo num Chrome sem janela (perfil novo, save vazio) e joga um p
 - pega o isopor no quiosque de picolé e vende os 12 picolés pros banhistas da areia;
 - pega um galão no depósito de Casa Amarela, confere que vai pro ombro, chega na freguesa e entrega (com pagamento);
 - senta numa mesa de dominó, joga uma pedra clicando na tela, deixa a partida terminar e levanta da mesa;
+- aceita a peleja de repente na Casa da Cultura, acerta as 5 estrofes clicando na palavra certa e confere o pagamento;
+- pede uma pipa emprestada numa comunidade e, puxando e dando linha, segura ela 20 s acima de 35 m;
 - liga o toró com alagamento;
 - passa pelo álbum, pelas oito abas do celular, pelo bloco de frevo e pelo som ambiente;
 - para num sinal vermelho, espera o ambulante e compra;
@@ -921,6 +923,40 @@ Também conta:
 - desafio do dia "Ganha uma partida de dominó";
 - a dica na agenda do dominó agora avisa que dá pra sentar.
 
+## Cantoria de repente na Casa da Cultura (`src/repente.js`)
+Das 9h ao fim da tarde, na frente da Casa da Cultura (ou do Mercado de Casa Amarela / da Boa Vista, se ela não existir no mapa), dois violeiros cantam sentados em tamborete, de chapéu de couro e viola no colo. Tem uma rodinha de seis pessoas ouvindo e um chapéu no chão pras moedas. Mestre Zé Pajeú desafia quem passa ("Quem tem coragem de pelejar comigo?").
+
+A pé, perto dele, **B** aceita a peleja e abre a tela da cantoria:
+- São **5 estrofes**, sorteadas de 10. Em cada uma, o mestre canta dois versos e você fecha os seus escolhendo a última palavra entre três. Só uma rima e faz sentido.
+- Escolhe clicando, tocando ou com as teclas **1**, **2** e **3**. São **10 s** por estrofe; se o tempo acaba, "Calou!".
+- Com 4 ou 5 certas você ganha: R$ 20 no chapéu e a conta pro troféu. Com 3 é empate; com menos, o mestre vence. **Esc** ou "Sair" largam no meio.
+
+Todos os versos foram inventados pro jogo, nenhum é de cantador de verdade.
+
+Também conta:
+- troféu "Cantador de primeira";
+- desafio do dia "Vence uma peleja de repente";
+- entrada na agenda.
+
+## Empinar pipa na comunidade (`src/empinar.js`)
+Perto de uma das crianças que soltam pipa na comunidade (`src/pipas.js`), a pé, **B** pede a pipa reserva emprestada: vermelha, com faixa e rabiola amarelas. Você fica parado segurando a linha e a câmera passa a olhar pra pipa (sem entrar nas paredes das casas coladas do morro).
+- **W/↑** puxa a linha: a pipa sobe e a linha encurta um pouco.
+- **S/↓** dá linha: a pipa vai mais longe.
+- **A/D** vira a pipa pros lados.
+- **B** recolhe. No toque, o direcional faz o mesmo e o botão de ação vira "recolher".
+
+A brisa (a mesma de `pipas.js`) vem em rajadas: com vento fraco, a pipa parada desce sozinha. Muito de lado, ela embica e despenca.
+- **Meta:** somar 20 s acima de 35 m de altura em até 90 s.
+- **Fim:** abaixo de 3 m, "A pipa caiu!". Com chuva a molecada não empresta, e se a chuva chega no meio você recolhe. Entrar em carro também larga a pipa.
+
+Linha de algodão, sem cerol: cerol é proibido e machuca gente.
+
+Simulando 50 vezes, quem puxa até o alto, dá linha e corrige o lado consegue todas; quem fica parado não consegue nenhuma.
+
+Também conta:
+- troféu "Pipa no céu";
+- desafio do dia "Empina uma pipa lá no alto".
+
 ## Sinos das igrejas (`src/sinos.js`, `audio.sino`)
 A cada hora cheia do jogo, a igreja mais perto do jogador (a menos de 450 m) bate o sino uma vez por hora, como relógio de 12 horas (15h dá 3 batidas), uma a cada 1,6 s. As igrejas vêm dos lugares de culto do mapa e dos nomes com igreja, basílica, capela, matriz, convento, concatedral ou paróquia. O sino é sintetizado com parciais de sino (fundamental, terça menor, quinta, oitava e um "hum" grave) que demoram a sumir, com o volume pela distância. Quando o relógio volta das 17h pras 6h, não toca.
 
@@ -1312,7 +1348,8 @@ Fotos do jogo (Chrome sem janela, câmera livre, 11h30) lado a lado com fotos do
 - **Chapéu e peças penduradas depois:** se um módulo pendura ou tira algo do tronco depois que a pessoa ganhou o corpo novo (o chapéu de palha da quadrilha), as cópias nos ossos são refeitas, e o original some (antes ficava em dobro). O chapéu sobe a altura de um cabelo, porque a cabeça de caixa é medida com cabelo e a nova sem. A saia abre mais embaixo, então a coxa dança por dentro sem furar.
 - **Andar de verdade:** quando a pessoa só está andando (`animatePerson` marca isso a cada quadro), o corpo novo usa as animações do kit, com parado, andar e trote pela velocidade e troca suave. Se o módulo mexe nos braços depois do passo (celular, sacola, sombrinha), esses braços continuam copiados do boneco. Dança, capoeira, sentado e outras poses especiais seguem copiadas por inteiro.
 - **Em pé esperando:** quem está parado com tronco e pernas do boneco sem giro há meio segundo (fila, coral, plateia, vendedor) também usa a animação de verdade, em vez de ficar duro feito manequim. Os braços que o módulo pôs (palma, instrumento, celular) e a cabeça virada continuam copiados. Um terço do povo (sorteado pela pessoa) fica de conversa, gesticulando (`Idle_Talking_Loop`), e o resto respira na espera (`Idle_Loop`). No Marco Zero, 14 dos 16 corpos de perto passaram a se mexer; a CPU foi de ~0,9 para ~1,5 ms por quadro. `genteReal.conversando` conta quantos estão de conversa.
-- **Olham pra você:** quem está parado vira a cabeça devagar para o jogador que passa a até 5 m, pela frente (até ~60° para o lado e um pouco para cima ou para baixo), e volta quando ele se afasta. Vale por cima do balanço de cabeça do módulo (o coral continua cantando), mas não quando o módulo já vira bem a cabeça para outro lado. O jogador vem de `jogadorMesh()` (protagonista.js, o último boneco que recebeu `attach`). `genteReal.olhando` conta quantos estão olhando.
+- **Olham pra você:** quem está parado ou andando (correndo, não) vira a cabeça devagar para o jogador que passa a até 5 m, pela frente (até ~60° para o lado e um pouco para cima ou para baixo), e volta quando ele se afasta. Vale por cima do balanço de cabeça do módulo (o coral continua cantando), mas não quando o módulo já vira bem a cabeça para outro lado. O jogador vem de `jogadorMesh()` (protagonista.js, o último boneco que recebeu `attach`). `genteReal.olhando` conta quantos estão olhando.
+- **Dão tchau:** pouco menos da metade do povo (sorteado pelo id) acena para o jogador depois de 1 s olhando para ele (0,4 s se vem andando): levanta o braço direito de lado, abre a mão e balança por ~2 s, uma vez por encontro (encontro novo depois de 4 s sem ver o jogador). O kit não tem clipe de aceno: a pose é a de um boneco de caixas com o braço erguido, posta nos ossos pelo mesmo caminho do `MAPA`, e os dedos voltam à pose do modelo (mão aberta). Quem está com o braço direito ocupado pelo módulo (coral com o caderno, músico, celular) não acena. `window.genteReal.acenando` / `acenaram` / `quemAcena` (id da pessoa).
 - Os módulos não mudam: cada pessoa continua sendo o boneco de `makePerson`, posado pelas juntas (`userData.legL`, `armR`, `upper`, `head`…) e por `animatePerson`. A cada quadro a pose das juntas é copiada para os ossos: coxa, canela, braço, antebraço, tronco e cabeça, com o lado tirado da posição e a pose de referência do primeiro quadro de "parado". Dança, capoeira, dominó, instrumentos e o resto continuam valendo.
 - Só as peças de caixa criadas por `makePerson` somem (`userData.caixas`). O que os módulos penduram depois (pandeiro, véu, moicano) continua visível, preso na junta de caixa. Boné, óculos e sombrinha da pessoa vão para os ossos, como no protagonista.
 - O visual vem de `userData.look`, gravado em `makePerson`:

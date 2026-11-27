@@ -150,6 +150,7 @@ async function montarModelo(k, anims) {
     body.parent.add(saia);
   }
   // pose de referência = primeiro quadro de "parado" (braço caído, perna reta), que corresponde ao boneco em descanso
+  const bindLocal = {}; for (const b of bones) bindLocal[b.name] = b.quaternion.clone(); // mão aberta (o aceno abre os dedos)
   const mixer = new THREE.AnimationMixer(raiz), idle = anims.animations.find((a) => a.name === 'Idle_Loop');
   if (idle) { mixer.clipAction(idle).play(); mixer.update(0); }
   raiz.updateMatrixWorld(true);
@@ -165,7 +166,7 @@ async function montarModelo(k, anims) {
     ['upperarm_' + ladoL, ['upper', 'armL']], ['lowerarm_' + ladoL, ['upper', 'armL', 'elbowL']],
     ['upperarm_' + ladoR, ['upper', 'armR']], ['lowerarm_' + ladoR, ['upper', 'armR', 'elbowR']],
   ];
-  return { k, raiz, refLocal, refWorld, ossoRest, cabeca, MAPA, escala: raiz.scale.x,
+  return { k, raiz, refLocal, refWorld, ossoRest, bindLocal, ladoR, cabeca, MAPA, escala: raiz.scale.x,
     corte: { idxCorpo: idx.slice(), regCorpo, regRoupa: Int8Array.from(regT), nV: si.count, cache: new Map() } };
 }
 
@@ -326,11 +327,11 @@ function posar(g, I, dt) {
     const mexR = Math.abs(u.armR.rotation.x - aR) > 1e-3 || Math.abs(u.elbowR.rotation.x - eR) > 1e-3 || Math.abs(u.armR.rotation.z - 0.07) > 0.03 || u.armR.rotation.y !== 0;
     const mexH = !marcado && !zero(u.head); // cabeça virada pelo módulo (olhando algo)
     mapa = M.MAPA.filter(([o, c]) => (mexL && c.includes('armL')) || (mexR && c.includes('armR')) || (mexH && o === 'Head'));
-    I.andando = true;
-    I.podeOlhar = v < 0.3 && (!mexH || Math.abs(u.head.rotation.y) < 0.3); // cabeça bem virada pelo módulo: deixa
+    I.andando = true; I.mexR = mexR;
+    I.vel = v; I.podeOlhar = v < 2.6 && (!mexH || Math.abs(u.head.rotation.y) < 0.3); // cabeça bem virada pelo módulo: deixa; quem corre não olha
   } else {
     if (I.andando) { for (const a of Object.values(I.acoes)) a.setEffectiveWeight(0); I.andando = false; }
-    I.podeOlhar = false;
+    I.podeOlhar = false; I.mexR = true;
     for (const [n, b] of Object.entries(I.bones)) { const r = M.refLocal[n]; if (r) b.quaternion.copy(r); }
     aplicarPorte(I);
     I.raiz.updateMatrixWorld(true);
@@ -346,7 +347,7 @@ function posar(g, I, dt) {
   olhar(g, I, dt);
 }
 
-// quem está parado e com a cabeça livre olha o jogador que passa perto (até 5 m, na frente dele): vira a cabeça
+// quem está parado ou andando (não correndo) e com a cabeça livre olha o jogador que passa perto (até 5 m, na frente dele): vira a cabeça
 // devagar, até ~60° para o lado e um pouco para cima ou para baixo, e volta quando ele se afasta
 const _j = new THREE.Vector3(), _e = new THREE.Euler(0, 0, 0, 'YXZ'), _o = new THREE.Quaternion(), _hq = new THREE.Quaternion();
 function olhar(g, I, dt) {
@@ -360,6 +361,7 @@ function olhar(g, I, dt) {
   }
   const k = Math.min(1, dt * 3.5);
   I.yaw = (I.yaw || 0) + (ty - (I.yaw || 0)) * k; I.pitch = (I.pitch || 0) + (tp - (I.pitch || 0)) * k;
+  acenar(g, I, dt, ty !== 0 || tp !== 0);
   if (Math.abs(I.yaw) + Math.abs(I.pitch) < 1e-3) return;
   const h = I.bones.Head; if (!h) return;
   // giro no espaço da pessoa, levado para o mundo e aplicado por cima da cabeça
@@ -369,6 +371,37 @@ function olhar(g, I, dt) {
   h.parent.getWorldQuaternion(_pq);
   h.quaternion.copy(_pq.invert().multiply(_hq));
   h.updateMatrixWorld(true);
+}
+
+// aceno: quem é dado (pouco menos da metade do povo, sorteado pelo id) e passou 1 s olhando o jogador (0,4 s se vem andando) levanta o
+// braço direito e dá tchau, uma vez por encontro (o kit não tem clipe de aceno: a pose é a de um boneco de caixas
+// com o braço erguido de lado, posta nos ossos pelo mesmo caminho do MAPA). Braço mexido pelo módulo não acena.
+// Encontro novo depois de 4 s sem ver o jogador
+const ACENO = 2.2, _ea = new THREE.Euler(), _qa = new THREE.Quaternion(), _qe = new THREE.Quaternion(), _qb = new THREE.Quaternion();
+function acenar(g, I, dt, vendo) {
+  const u = g.userData;
+  if (vendo) { I.vendo = (I.vendo || 0) + dt; I.longe = 0; } else { I.vendo = 0; I.longe = (I.longe || 0) + dt; if (I.longe > 4) I.acenou = false; }
+  if (!I.aceno && !I.acenou && I.vendo > (I.vel > 0.3 ? 0.4 : 1) && !I.mexR && I.podeOlhar && ((g.id * 2246822519) >>> 0) % 100 < 45) { I.aceno = ACENO; I.acenou = true; }
+  if (!I.aceno) return;
+  if (I.mexR || !I.podeOlhar) { I.aceno = 0; return; } // o módulo pegou o braço ou a pessoa saiu andando
+  I.aceno = Math.max(0, I.aceno - dt);
+  const t = ACENO - I.aceno, w = Math.min(1, t / 0.35, I.aceno / 0.35); // sobe, balança e desce
+  const M = I.M, ida = M.MAPA.filter(([, c]) => c.includes('armR'));
+  g.getWorldQuaternion(_gq);
+  for (const [osso, cadeia] of ida) {
+    const b = I.bones[osso]; if (!b) continue;
+    _d.identity(); if (u.upper) _d.multiply(u.upper.quaternion);
+    _d.multiply(_qa.setFromEuler(_ea.set(-0.35, 0, 2.35 + 0.28 * Math.sin(t * 11))));
+    if (cadeia.includes('elbowR')) _d.multiply(_qe.setFromEuler(_ea.set(-0.5, 0, 0)));
+    _w.copy(_gq).multiply(_d).multiply(M.refWorld[osso]);
+    b.getWorldQuaternion(_qb).slerp(_w, w);
+    b.parent.getWorldQuaternion(_pq);
+    b.quaternion.copy(_pq.invert().multiply(_qb));
+    b.updateMatrixWorld(true);
+  }
+  // abre a mão: dedos (menos o polegar) voltam à pose do modelo, que é de mão aberta
+  for (const [n, b] of Object.entries(I.bones)) if (/^(index|middle|ring|pinky)_0[123]_/.test(n) && n.endsWith('_' + M.ladoR)) b.quaternion.slerp(M.bindLocal[n], w);
+  I.bones['hand_' + M.ladoR]?.updateMatrixWorld(true);
 }
 
 const _p = new THREE.Vector3();
@@ -406,5 +439,5 @@ export function atualizarGente(camera) {
   }
   atualizarGente.ms = (atualizarGente.ms || 0) * 0.95 + (performance.now() - t0) * 0.05; // custo médio por quadro (CPU)
   if (typeof window !== 'undefined' && quadro % 30 === 0 && window.__corposDebug) window.__corposDebug = [...ativos].map(([g, I]) => ({ cam: g.userData.look.camisa, porte: I.porte, hatY: I.acess[0] ? new THREE.Box3().setFromObject(I.acess[0]).getCenter(new THREE.Vector3()).toArray().map((v) => Math.round(v * 100) / 100) : null, headP: new THREE.Vector3().setFromMatrixPosition(I.bones.Head.matrixWorld).toArray().map((v) => Math.round(v * 100) / 100), headY: Math.round(new THREE.Vector3().setFromMatrixPosition(I.bones.Head.matrixWorld).y * 100) / 100, hatVis: I.acess[0] ? (() => { let v = true; I.acess[0].traverseAncestors((a) => { if (!a.visible) v = false; }); return v; })() : null, nUp: g.userData.upper?.children.length, acess: I.acess.length, orig: (I.acessOrig || []).map((o) => o.visible), look: g.userData.look, cores: I.roupa.userData.cores.value.map((v) => v.toArray().map((x) => Math.round(x * 100) / 100)) }));
-  if (typeof window !== 'undefined' && quadro % 30 === 0) window.genteReal = { ms: Math.round(atualizarGente.ms * 100) / 100, ativos: ativos.size, andando: [...ativos.values()].filter((I) => I.andando).length, conversando: [...ativos.values()].filter((I) => I.andando && I.acoes.Idle_Talking_Loop?.getEffectiveWeight() > 0.5).length, olhando: [...ativos.values()].filter((I) => Math.abs(I.yaw || 0) > 0.15).length, criados, pessoas: PESSOAS.size, onde: [...ativos].sort((a, b) => b[1].andando - a[1].andando).slice(0, 4).map(([g, I]) => [g.matrixWorld.elements[12], g.matrixWorld.elements[13], g.matrixWorld.elements[14], (g.userData.look.fem ? 'f' : 'm') + (I.andando ? ':anda' : '')].map((v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : v))) };
+  if (typeof window !== 'undefined' && quadro % 30 === 0) window.genteReal = { ms: Math.round(atualizarGente.ms * 100) / 100, ativos: ativos.size, andando: [...ativos.values()].filter((I) => I.andando).length, conversando: [...ativos.values()].filter((I) => I.andando && I.acoes.Idle_Talking_Loop?.getEffectiveWeight() > 0.5).length, olhando: [...ativos.values()].filter((I) => Math.abs(I.yaw || 0) > 0.15).length, acenando: [...ativos.values()].filter((I) => I.aceno > 0).length, quemAcena: [...ativos].find(([, I]) => I.aceno > 0)?.[0].id, acenaram: [...ativos.values()].filter((I) => I.acenou).length, criados, pessoas: PESSOAS.size, onde: [...ativos].sort((a, b) => b[1].andando - a[1].andando).slice(0, 4).map(([g, I]) => [g.matrixWorld.elements[12], g.matrixWorld.elements[13], g.matrixWorld.elements[14], (g.userData.look.fem ? 'f' : 'm') + (I.andando ? ':anda' : '')].map((v) => (typeof v === 'number' ? Math.round(v * 10) / 10 : v))) };
 }
